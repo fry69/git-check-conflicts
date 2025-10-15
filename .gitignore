@@ -6,3 +6,6 @@ git-check-conflicts-*
 # Deno
 .deno/
 deno.lock
+
+# Test output
+meta.txt

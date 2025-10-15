@@ -1,0 +1,86 @@
+name: Build Deno binaries
+
+# Trigger on tags (recommended for releases) and allow manual run
+on:
+  push:
+    tags:
+      - "v*" # e.g. v1.2.3 — run when you push a release tag
+  workflow_dispatch: # manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    # we pick the runner per matrix row below
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ""
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            ext: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: ".exe"
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            ext: ""
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            ext: ""
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          cache: true
+          deno-version: v2.x
+
+      # Extract metadata (tool name, version, entrypoint) from deno.json
+      # The script writes outputs to GITHUB_OUTPUT so subsequent steps can reference them.
+      - id: meta
+        name: Extract tool name/version/entry from deno.json
+        shell: bash
+        run: |
+          deno run -A tools/get-deno-meta.ts
+
+      - name: Show metadata (for logs)
+        run: |
+          echo "tool_name=${{ steps.meta.outputs.tool_name }}"
+          echo "tool_version=${{ steps.meta.outputs.tool_version }}"
+          echo "entry=${{ steps.meta.outputs.entry }}"
+
+      - name: Prepare output dir
+        run: mkdir -p dist
+
+      - name: Compile with deno
+        # Use --allow-all to avoid permission surprises during compilation.
+        # If you'd rather limit permissions, change this to the exact flags you need.
+        run: |
+          set -e
+          OUT="dist/${{ steps.meta.outputs.tool_name }}-${{ steps.meta.outputs.tool_version }}-${{ matrix.target }}${{ matrix.ext }}"
+          echo "Compiling target=${{ matrix.target }} -> $OUT"
+          # Ensure parent dir exists (Windows may require different mkdir flags; using POSIX-style works on hosted runners)
+          mkdir -p dist
+          deno compile -A --target=${{ matrix.target }} --output="${OUT}" "${{ steps.meta.outputs.entry }}"
+        shell: bash
+
+      - name: List dist for debug
+        run: ls -la dist || true
+        shell: bash
+
+      - name: Upload compiled artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.tool_name }}-${{ steps.meta.outputs.tool_version }}-${{ matrix.target }}
+          path: dist/**

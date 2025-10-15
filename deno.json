@@ -22,7 +22,8 @@
     "test:cli": "deno test -P tests/cli_test.ts",
     "compile": "deno compile -P --output git-check-conflicts src/main.ts",
     "install:local": "deno task compile && mv git-check-conflicts $HOME/.local/bin/",
-    "release": "deno run -A tools/release.ts"
+    "release": "deno run -A tools/release.ts",
+    "workflow:meta": "GITHUB_OUTPUT=meta.txt deno run -A tools/get-deno-meta.ts && cat meta.txt"
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.23",
