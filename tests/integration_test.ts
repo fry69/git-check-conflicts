@@ -677,7 +677,7 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
     const originalDir = Deno.cwd();
     try {
       Deno.chdir(repo.dir);
-      const { checkConflictsWithMergeTree, getConflictingFilesFromMergeTree, fileDiffFor, resolveCommit, getEmptyTreeHash, getCurrentRef, runCmd } = await import("../src/lib.ts");
+      const { checkConflictsWithMergeTree, getConflictingFilesFromMergeTree, getFileConflictDetail, resolveCommit, getEmptyTreeHash, getCurrentRef, runCmd } = await import("../src/lib.ts");
 
       const currentRef = await getCurrentRef();
       const oursResult = await resolveCommit("HEAD");
@@ -693,7 +693,18 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
 
       const conflictingFiles = await getConflictingFilesFromMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
 
-      // Build JSON result like main.ts does
+      // Build JSON result like main.ts does with new structure
+      interface FileDetail {
+        conflict_type: string;
+        message?: string;
+        rename?: {
+          old_path: string;
+          new_path: string;
+          side: string;
+        };
+        diff?: string;
+      }
+
       const result = {
         current_ref: currentRef,
         other_ref: "main",
@@ -702,26 +713,30 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
         merge_base: mergeBase,
         conflicts: true,
         conflicted_files: conflictingFiles,
-        diffs: {} as Record<string, string | null>,
+        files: {} as Record<string, FileDetail>,
       };
 
       for (const f of conflictingFiles) {
-        result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit, mergeBase || undefined);
+        result.files[f] = await getFileConflictDetail(f, oursCommit, theirsCommit, mergeBase || undefined);
       }
 
       // Verify JSON structure
       expect(result.conflicts).toBe(true);
       expect(result.conflicted_files).toContain("data.txt");
-      expect(result.diffs["data.txt"]).toContain("RENAME/MODIFY CONFLICT");
-      expect(result.diffs["data.txt"]).toContain("data.txt → info.txt");
+      expect(result.files["data.txt"]).toBeTruthy();
+      expect(result.files["data.txt"].conflict_type).toBe("rename_modify");
+      expect(result.files["data.txt"].message).toContain("data.txt → info.txt");
+      expect(result.files["data.txt"].rename).toBeTruthy();
+      expect(result.files["data.txt"].rename?.old_path).toBe("data.txt");
+      expect(result.files["data.txt"].rename?.new_path).toBe("info.txt");
 
       // Verify it's valid JSON when stringified
       const jsonString = JSON.stringify(result, null, 2);
-      expect(jsonString).toContain("RENAME/MODIFY CONFLICT");
+      expect(jsonString).toContain("rename_modify");
 
       // Verify it can be parsed back
       const parsed = JSON.parse(jsonString);
-      expect(parsed.diffs["data.txt"]).toContain("RENAME/MODIFY CONFLICT");
+      expect(parsed.files["data.txt"].conflict_type).toBe("rename_modify");
     } finally {
       Deno.chdir(originalDir);
     }

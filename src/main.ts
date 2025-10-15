@@ -11,10 +11,10 @@ import {
   checkConflictsWithReadTree,
   detectDefaultBranch,
   fetchAll,
-  fileDiffFor,
   getConflictingFilesFromMergeTree,
   getCurrentRef,
   getEmptyTreeHash,
+  getFileConflictDetail,
   GitError,
   isGitRepository,
   resolveCommit,
@@ -141,7 +141,7 @@ async function main(): Promise<number> {
     merge_base: mergeBase || null,
     conflicts: false,
     conflicted_files: [],
-    diffs: {},
+    files: {},
   };
 
   // Check for conflicts using read-tree
@@ -161,7 +161,7 @@ async function main(): Promise<number> {
 
       if (printDiffs) {
         for (const f of unmergedFiles) {
-          result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit, mergeBase || undefined);
+          result.files[f] = await getFileConflictDetail(f, oursCommit, theirsCommit, mergeBase || undefined);
         }
       }
 
@@ -177,8 +177,13 @@ async function main(): Promise<number> {
         console.log("\nUnified diffs (ours -> theirs) for each conflicting file:");
         for (const f of unmergedFiles) {
           console.log("\n--- " + f + " ---");
-          const diff = result.diffs[f];
-          if (diff) console.log(diff);
+          const fileDetail = result.files[f];
+          if (fileDetail?.message) {
+            console.log(`⚠️  ${fileDetail.conflict_type.toUpperCase().replace(/_/g, "/")} CONFLICT:`);
+            console.log(fileDetail.message.split('\n').map(line => `   ${line}`).join('\n'));
+            console.log();
+          }
+          if (fileDetail?.diff) console.log(fileDetail.diff);
           else console.log("(no textual diff available or file is binary)");
         }
       }
@@ -209,7 +214,7 @@ async function main(): Promise<number> {
 
     if (printDiffs) {
       for (const f of conflictingFiles) {
-        result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit, mergeBase || undefined);
+        result.files[f] = await getFileConflictDetail(f, oursCommit, theirsCommit, mergeBase || undefined);
       }
     }
 
@@ -225,8 +230,13 @@ async function main(): Promise<number> {
         console.log("\nUnified diffs (ours -> theirs) for files that differ:");
         for (const f of conflictingFiles) {
           console.log("\n--- " + f + " ---");
-          const diff = result.diffs[f];
-          if (diff) console.log(diff);
+          const fileDetail = result.files[f];
+          if (fileDetail?.message) {
+            console.log(`⚠️  ${fileDetail.conflict_type.toUpperCase().replace(/_/g, "/")} CONFLICT:`);
+            console.log(fileDetail.message.split('\n').map(line => `   ${line}`).join('\n'));
+            console.log();
+          }
+          if (fileDetail?.diff) console.log(fileDetail.diff);
           else console.log("(no textual diff available or file is binary)");
         }
       }

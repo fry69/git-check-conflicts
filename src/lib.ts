@@ -222,6 +222,145 @@ export async function fileDiffFor(
   return diffOutput || null;
 }
 
+export async function getFileConflictDetail(
+  file: string,
+  oursCommit: string,
+  theirsCommit: string,
+  mergeBase?: string,
+): Promise<FileConflictDetail> {
+  let conflictType: FileConflictDetail["conflict_type"] = "content";
+  let message: string | undefined;
+  let renameInfo: RenameInfo | undefined;
+  let diff: string | undefined;
+
+  // If we have a merge-base, check for renames on each side
+  if (mergeBase) {
+    // Check our side for renames
+    const ourRenames = await runCmd([
+      "git",
+      "diff",
+      "-M",
+      "--name-status",
+      "--diff-filter=R",
+      mergeBase,
+      oursCommit,
+    ]);
+
+    // Check their side for renames
+    const theirRenames = await runCmd([
+      "git",
+      "diff",
+      "-M",
+      "--name-status",
+      "--diff-filter=R",
+      mergeBase,
+      theirsCommit,
+    ]);
+
+    // Look for our file in the rename list (checking if it's the OLD name that was renamed)
+    const ourRenameMatch = ourRenames.stdout?.split('\n')
+      .map(line => line.match(/^R\d+\s+(\S+)\s+(\S+)$/))
+      .find(match => match && match[1] === file);
+
+    const theirRenameMatch = theirRenames.stdout?.split('\n')
+      .map(line => line.match(/^R\d+\s+(\S+)\s+(\S+)$/))
+      .find(match => match && match[1] === file);
+
+    if (ourRenameMatch) {
+      const [, oldName, newName] = ourRenameMatch;
+      conflictType = "rename_modify";
+      message = `Your branch: renamed ${oldName} → ${newName}\nTheir branch: modified ${oldName}`;
+      renameInfo = {
+        old_path: oldName,
+        new_path: newName,
+        side: "ours",
+      };
+
+      // Compare the renamed file on our side with the original file on their side
+      const renameContentDiff = await runCmd([
+        "git",
+        "diff",
+        "-U3",
+        "--no-prefix",
+        `${oursCommit}:${newName}`,
+        `${theirsCommit}:${oldName}`,
+      ]);
+
+      diff = renameContentDiff.stdout?.trim() || renameContentDiff.stderr?.trim() || undefined;
+
+    } else if (theirRenameMatch) {
+      const [, oldName, newName] = theirRenameMatch;
+      conflictType = "modify_rename";
+      message = `Your branch: modified ${oldName}\nTheir branch: renamed ${oldName} → ${newName}`;
+      renameInfo = {
+        old_path: oldName,
+        new_path: newName,
+        side: "theirs",
+      };
+
+      // Compare the original file on our side with the renamed file on their side
+      const renameContentDiff = await runCmd([
+        "git",
+        "diff",
+        "-U3",
+        "--no-prefix",
+        `${oursCommit}:${oldName}`,
+        `${theirsCommit}:${newName}`,
+      ]);
+
+      diff = renameContentDiff.stdout?.trim() || renameContentDiff.stderr?.trim() || undefined;
+    }
+  }
+
+  // If no rename was detected, get regular diff
+  if (!renameInfo) {
+    const d = await runCmd([
+      "git",
+      "diff",
+      "-U3",
+      "--no-prefix",
+      "-M",
+      oursCommit,
+      theirsCommit,
+      "--",
+      file,
+    ]);
+
+    diff = d.stdout?.trim() || d.stderr?.trim() || undefined;
+
+    // Check if it's a delete/modify conflict
+    if (diff && (diff.includes("deleted file mode") || diff.includes("new file mode"))) {
+      if (diff.includes("deleted file mode")) {
+        conflictType = "delete_modify";
+        message = "File deleted on one branch, modified on the other";
+      } else {
+        conflictType = "modify_delete";
+        message = "File modified on one branch, deleted on the other";
+      }
+    }
+  }
+
+  return {
+    conflict_type: conflictType,
+    message,
+    rename: renameInfo,
+    diff,
+  };
+}
+
+export interface RenameInfo {
+  old_path: string;
+  new_path: string;
+  side: "ours" | "theirs";
+}
+
+export interface FileConflictDetail {
+  conflict_type: "content" | "rename_modify" | "modify_rename" | "delete_modify" | "modify_delete";
+  message?: string;
+  rename?: RenameInfo;
+  diff?: string;
+}
+
 export interface ConflictCheckResult {
   current_ref: string;
   other_ref: string;
@@ -230,7 +369,7 @@ export interface ConflictCheckResult {
   merge_base: string | null;
   conflicts: boolean;
   conflicted_files: string[];
-  diffs: Record<string, string | null>;
+  files: Record<string, FileConflictDetail>;
 }
 
 export class TempIndex {

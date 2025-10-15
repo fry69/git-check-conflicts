@@ -172,7 +172,7 @@ Deno.test("CLI - json output", async () => {
     expect(json).toHaveProperty("merge_base");
     expect(json).toHaveProperty("conflicts");
     expect(json).toHaveProperty("conflicted_files");
-    expect(json).toHaveProperty("diffs");
+    expect(json).toHaveProperty("files");
     expect(json.conflicts).toBe(false);
     expect(json.other_ref).toBe("main");
   } finally {
@@ -346,7 +346,9 @@ Deno.test("CLI - combined flags", async () => {
 
     const json = JSON.parse(result.stdout);
     expect(json.conflicts).toBe(true);
-    expect(json.diffs["file.txt"]).toBeTruthy();
+    expect(json.files["file.txt"]).toBeTruthy();
+    expect(json.files["file.txt"].conflict_type).toBeTruthy();
+    expect(json.files["file.txt"].diff).toBeTruthy();
   } finally {
     await repo.cleanup();
   }
