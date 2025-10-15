@@ -12,7 +12,7 @@ import {
   detectDefaultBranch,
   fetchAll,
   fileDiffFor,
-  getChangedFilesBetween,
+  getConflictingFilesFromMergeTree,
   getCurrentRef,
   getEmptyTreeHash,
   GitError,
@@ -198,12 +198,17 @@ async function main(): Promise<number> {
   );
 
   if (hasConflicts) {
-    const changedFiles = await getChangedFilesBetween(oursCommit, theirsCommit);
+    const conflictingFiles = await getConflictingFilesFromMergeTree(
+      mergeBase || emptyTree,
+      oursCommit,
+      theirsCommit,
+      emptyTree,
+    );
     result.conflicts = true;
-    result.conflicted_files = changedFiles;
+    result.conflicted_files = conflictingFiles;
 
     if (printDiffs) {
-      for (const f of changedFiles) {
+      for (const f of conflictingFiles) {
         result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit);
       }
     }
@@ -214,11 +219,11 @@ async function main(): Promise<number> {
     }
 
     console.log("CONFLICTS EXPECTED (detected via merge-tree).");
-    if (changedFiles.length > 0) {
-      for (const f of changedFiles) console.log(f);
+    if (conflictingFiles.length > 0) {
+      for (const f of conflictingFiles) console.log(f);
       if (printDiffs) {
         console.log("\nUnified diffs (ours -> theirs) for files that differ:");
-        for (const f of changedFiles) {
+        for (const f of conflictingFiles) {
           console.log("\n--- " + f + " ---");
           const diff = result.diffs[f];
           if (diff) console.log(diff);

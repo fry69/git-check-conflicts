@@ -249,6 +249,71 @@ export async function checkConflictsWithMergeTree(
   return false;
 }
 
+export async function getConflictingFilesFromMergeTree(
+  mergeBase: string,
+  oursCommit: string,
+  theirsCommit: string,
+  emptyTree: string,
+): Promise<string[]> {
+  const mergeTreeRes = await runCmd([
+    "git",
+    "merge-tree",
+    mergeBase || emptyTree,
+    oursCommit,
+    theirsCommit,
+  ]);
+
+  const conflictingFiles: string[] = [];
+  const lines = mergeTreeRes.stdout.split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Check for structural conflicts (removed in local/remote, added in local/remote, changed in both)
+    if (/^(removed in (local|remote)|added in (local|remote)|changed in both)/.test(line)) {
+      // The file path appears in the subsequent lines (base, our, their)
+      // Look for lines like: "  base   100644 hash filename"
+      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+        const match = lines[j].match(/^\s+(base|our|their)\s+\d+\s+[a-f0-9]+\s+(.+)$/);
+        if (match) {
+          const filename = match[2];
+          if (!conflictingFiles.includes(filename)) {
+            conflictingFiles.push(filename);
+          }
+        }
+      }
+    }
+
+    // Check for content conflicts by looking for merge result with conflict markers
+    // In merge-tree output, the merged content follows "merged" or "result" indicators
+    // We need to check if the content has conflict markers
+    if (/^merged/.test(line) || /^result/.test(line)) {
+      // Look for the file reference in nearby lines
+      const match = line.match(/^(merged|result)\s+\d+\s+[a-f0-9]+\s+(.+)$/);
+      if (match) {
+        const filename = match[2];
+        // Check if subsequent content has conflict markers
+        let hasMarkers = false;
+        for (let j = i + 1; j < Math.min(i + 20, lines.length); j++) {
+          if (/^<<<<<<< /.test(lines[j])) {
+            hasMarkers = true;
+            break;
+          }
+          // Stop if we hit another file section
+          if (/^(removed in|added in|changed in|merged|result)/.test(lines[j])) {
+            break;
+          }
+        }
+        if (hasMarkers && !conflictingFiles.includes(filename)) {
+          conflictingFiles.push(filename);
+        }
+      }
+    }
+  }
+
+  return conflictingFiles;
+}
+
 export async function getChangedFilesBetween(
   oursCommit: string,
   theirsCommit: string,
