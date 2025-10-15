@@ -160,14 +160,14 @@ export async function fileDiffFor(
       theirsCommit,
     ]);
 
-    // Look for our file in the rename list (either as old or new name)
+    // Look for our file in the rename list (checking if it's the OLD name that was renamed)
     const ourRenameMatch = ourRenames.stdout?.split('\n')
-      .find(line => line.includes(file))
-      ?.match(/^R\d+\s+(\S+)\s+(\S+)$/);
+      .map(line => line.match(/^R\d+\s+(\S+)\s+(\S+)$/))
+      .find(match => match && match[1] === file);
 
     const theirRenameMatch = theirRenames.stdout?.split('\n')
-      .find(line => line.includes(file))
-      ?.match(/^R\d+\s+(\S+)\s+(\S+)$/);
+      .map(line => line.match(/^R\d+\s+(\S+)\s+(\S+)$/))
+      .find(match => match && match[1] === file);
 
     if (ourRenameMatch) {
       const [, oldName, newName] = ourRenameMatch;
