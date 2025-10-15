@@ -172,9 +172,36 @@ export async function fileDiffFor(
     if (ourRenameMatch) {
       const [, oldName, newName] = ourRenameMatch;
       renameInfo = `⚠️  RENAME/MODIFY CONFLICT:\n   Your branch: renamed ${oldName} → ${newName}\n   Their branch: modified ${oldName}\n\n`;
+
+      // Compare the renamed file on our side with the original file on their side
+      const renameContentDiff = await runCmd([
+        "git",
+        "diff",
+        "-U3",
+        "--no-prefix",
+        `${oursCommit}:${newName}`,
+        `${theirsCommit}:${oldName}`,
+      ]);
+
+      const renameDiffOutput = renameContentDiff.stdout?.trim() || renameContentDiff.stderr?.trim() || "";
+      return renameInfo + (renameDiffOutput || "(Files are identical after rename)");
+
     } else if (theirRenameMatch) {
       const [, oldName, newName] = theirRenameMatch;
       renameInfo = `⚠️  MODIFY/RENAME CONFLICT:\n   Your branch: modified ${oldName}\n   Their branch: renamed ${oldName} → ${newName}\n\n`;
+
+      // Compare the original file on our side with the renamed file on their side
+      const renameContentDiff = await runCmd([
+        "git",
+        "diff",
+        "-U3",
+        "--no-prefix",
+        `${oursCommit}:${oldName}`,
+        `${theirsCommit}:${newName}`,
+      ]);
+
+      const renameDiffOutput = renameContentDiff.stdout?.trim() || renameContentDiff.stderr?.trim() || "";
+      return renameInfo + (renameDiffOutput || "(Files are identical after rename)");
     }
   }
 
@@ -191,10 +218,6 @@ export async function fileDiffFor(
   ]);
 
   const diffOutput = d.stdout?.trim() || d.stderr?.trim() || "";
-
-  if (renameInfo) {
-    return renameInfo + (diffOutput || "(No content diff available for renamed file)");
-  }
 
   return diffOutput || null;
 }
