@@ -56,4 +56,4 @@ try {
 }
 // Write multiline output for GITHUB_OUTPUT
 // Use the "name<<EOF" format so Actions handles newlines.
-await Deno.writeTextFile(outPath, `changelog<<'EOF'\n${content}\nEOF\n`);
+await Deno.writeTextFile(outPath, `changelog<<EOF\n${content}\nEOF\n`);
