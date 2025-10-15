@@ -4,7 +4,7 @@
  */
 
 import { expect } from "@std/expect";
-import { runCmd, TempIndex } from "../src/main_lib.ts";
+import { runCmd, TempIndex } from "../src/lib.ts";
 
 interface TestRepo {
   dir: string;

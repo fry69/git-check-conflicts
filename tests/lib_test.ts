@@ -1,5 +1,5 @@
 /**
- * Unit tests for main_lib.ts
+ * Unit tests for lib.ts
  */
 
 import { expect } from "@std/expect";
@@ -17,7 +17,7 @@ import {
   revToTree,
   runCmd,
   TempIndex,
-} from "../src/main_lib.ts";
+} from "../src/lib.ts";
 
 Deno.test("runCmd - successful command", async () => {
   const result = await runCmd(["echo", "hello"]);
