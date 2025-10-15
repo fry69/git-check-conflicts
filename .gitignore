@@ -1,0 +1,8 @@
+# Compiled binaries
+git-check-conflicts
+git-check-conflicts-*
+*.exe
+
+# Deno
+.deno/
+deno.lock

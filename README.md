@@ -77,10 +77,42 @@ With `--json`, outputs structured data:
 
 The `diffs` object is populated only when `--diff` is also specified.
 
+## Installation
+
+### Compile to Binary
+
+Compile to a standalone executable for distribution:
+
+```bash
+deno task compile
+```
+
+This creates a `git-check-conflicts` binary in the current directory that can be used without Deno installed:
+
+```bash
+./git-check-conflicts --help
+./git-check-conflicts main
+```
+
+### Cross-compilation
+
+Compile for different platforms:
+
+```bash
+# Linux x86_64
+deno compile --target x86_64-unknown-linux-gnu --allow-all --output git-check-conflicts-linux src/main.ts
+
+# macOS ARM64
+deno compile --target aarch64-apple-darwin --allow-all --output git-check-conflicts-macos-arm src/main.ts
+
+# Windows
+deno compile --target x86_64-pc-windows-msvc --allow-all --output git-check-conflicts.exe src/main.ts
+```
+
 ## Requirements
 
-- Deno 2.x
-- Git
+- Deno 2.x (for development and running from source)
+- Git (always required)
 
 ## Development
 
@@ -92,6 +124,9 @@ deno task test
 deno task test:unit
 deno task test:integration
 deno task test:cli
+
+# Compile binary
+deno task compile
 
 # Lint and format
 deno fmt

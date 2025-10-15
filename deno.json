@@ -4,7 +4,8 @@
     "test": "deno test --allow-run --allow-read --allow-write --allow-env",
     "test:unit": "deno test --allow-run --allow-read --allow-write --allow-env tests/main_lib_test.ts",
     "test:integration": "deno test --allow-run --allow-read --allow-write --allow-env tests/integration_test.ts",
-    "test:cli": "deno test --allow-run --allow-read --allow-write --allow-env tests/cli_test.ts"
+    "test:cli": "deno test --allow-run --allow-read --allow-write --allow-env tests/cli_test.ts",
+    "compile": "deno compile --allow-run --allow-read --allow-write --allow-env --output git-check-conflicts src/main.ts"
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.23",
