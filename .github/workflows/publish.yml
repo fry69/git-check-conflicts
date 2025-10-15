@@ -9,6 +9,7 @@ on:
       - main # Only run when CI completes on main branch
 
 jobs:
+  if: false # disable job, uncomment below to enable
   publish:
     runs-on: ubuntu-latest
     # Additional safety check: only run if CI succeeded

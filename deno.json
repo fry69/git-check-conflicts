@@ -21,11 +21,15 @@
     "test:integration": "deno test -P tests/integration_test.ts",
     "test:cli": "deno test -P tests/cli_test.ts",
     "compile": "deno compile -P --output git-check-conflicts src/main.ts",
-    "install:local": "deno task compile && mv git-check-conflicts $HOME/.local/bin/"
+    "install:local": "deno task compile && mv git-check-conflicts $HOME/.local/bin/",
+    "release": "deno run -A tools/release.ts"
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.23",
-    "@std/expect": "jsr:@std/expect@1"
+    "@std/expect": "jsr:@std/expect@1",
+    "@std/fmt": "jsr:@std/fmt@^1.0.8",
+    "@std/path": "jsr:@std/path@^1.1.2",
+    "@std/semver": "jsr:@std/semver@^1.0.6"
   },
   "publish": {
     "include": [

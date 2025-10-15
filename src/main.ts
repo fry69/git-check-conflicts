@@ -40,6 +40,9 @@ import {
   TempIndex,
 } from "./lib.ts";
 
+const VERSION = "0.1.0";
+const SCRIPT_NAME = "git-check-conflicts";
+
 /**
  * Displays usage information for the CLI tool.
  *
@@ -92,13 +95,18 @@ Exit codes:
 async function main(): Promise<number> {
   // Parse arguments
   const parsed = parseArgs(Deno.args, {
-    boolean: ["fetch", "diff", "json", "help"],
-    alias: { d: "diff", h: "help" },
+    boolean: ["fetch", "diff", "json", "help", "version"],
+    alias: { d: "diff", h: "help", v: "version" },
     stopEarly: true,
   });
 
   if (parsed.help) {
     usage();
+    return 0;
+  }
+
+  if (parsed.version) {
+    console.log(`${SCRIPT_NAME} version ${VERSION}`);
     return 0;
   }
 
