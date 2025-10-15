@@ -265,8 +265,8 @@ export async function resolveCommit(
  *
  * @example
  * ```ts
- * const emptyTree = await runCmd(["git", "hash-object", "-t", "tree", "/dev/null"]);
- * const tree = await revToTree("main", emptyTree.stdout);
+ * const emptyTree = getEmptyTreeHash();
+ * const tree = await revToTree("main", emptyTree);
  * console.log(tree); // "4b825dc642cb6eb9a060e54bf8d69288fbee4904..."
  * ```
  */
@@ -718,23 +718,14 @@ export class TempIndex {
  *
  * @example
  * ```ts
- * const emptyTree = await getEmptyTreeHash();
+ * const emptyTree = getEmptyTreeHash();
  * console.log(emptyTree); // "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
  * ```
  */
-export async function getEmptyTreeHash(): Promise<string> {
-  // Get the empty tree hash from git itself
-  const result = await runCmd([
-    "git",
-    "hash-object",
-    "-t",
-    "tree",
-    "/dev/null",
-  ]);
-  if (result.code === 0 && result.stdout) {
-    return result.stdout;
-  }
-  // Fallback to well-known hash
+export function getEmptyTreeHash(): string {
+  // Return the well-known empty tree hash directly
+  // This is a constant value in Git and doesn't require system-specific paths like /dev/null
+  // See: https://github.com/git/git/blob/master/cache.h
   return "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 }
 

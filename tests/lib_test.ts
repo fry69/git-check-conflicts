@@ -3,6 +3,7 @@
  */
 
 import { expect } from "@std/expect";
+import { join } from "@std/path";
 import {
   checkConflictsWithMergeTree,
   detectDefaultBranch,
@@ -130,9 +131,9 @@ Deno.test("TempIndex - cleanup is idempotent", async () => {
   await tempIndex.cleanup();
 });
 
-Deno.test("getEmptyTreeHash - returns valid hash", async () => {
-  const hash = await getEmptyTreeHash();
-  expect(hash).toMatch(/^[0-9a-f]{40}$/);
+Deno.test("getEmptyTreeHash - returns valid hash", () => {
+  const hash = getEmptyTreeHash();
+  expect(hash).toBe("4b825dc642cb6eb9a060e54bf8d69288fbee4904");
 });
 
 Deno.test("isGitRepository - in git repo", async () => {
@@ -261,19 +262,19 @@ Deno.test("resolveCommit - invalid ref throws", async () => {
 });
 
 Deno.test("revToTree - valid rev", async () => {
-  const emptyTree = await getEmptyTreeHash();
+  const emptyTree = getEmptyTreeHash();
   const tree = await revToTree("HEAD", emptyTree);
   expect(tree).toMatch(/^[0-9a-f]{40}$/);
 });
 
 Deno.test("revToTree - empty rev returns empty tree", async () => {
-  const emptyTree = await getEmptyTreeHash();
+  const emptyTree = getEmptyTreeHash();
   const tree = await revToTree("", emptyTree);
   expect(tree).toBe(emptyTree);
 });
 
 Deno.test("revToTree - invalid rev returns empty tree", async () => {
-  const emptyTree = await getEmptyTreeHash();
+  const emptyTree = getEmptyTreeHash();
   const tree = await revToTree("invalid_ref_xyz", emptyTree);
   expect(tree).toBe(emptyTree);
 });
@@ -292,7 +293,7 @@ Deno.test("checkConflictsWithMergeTree - no conflicts", async () => {
     await runCmd(["git", "config", "user.email", "test@test.com"]);
     await runCmd(["git", "config", "user.name", "Test"]);
     await runCmd(["git", "commit", "--allow-empty", "-m", "initial"]);
-    const emptyTree = await getEmptyTreeHash();
+    const emptyTree = getEmptyTreeHash();
     const headCommit = (await resolveCommit("HEAD")).commit;
 
     // Comparing HEAD with itself should have no conflicts
@@ -317,7 +318,7 @@ Deno.test("fileDiffFor - same commit returns null or empty", async () => {
     await runCmd(["git", "init"]);
     await runCmd(["git", "config", "user.email", "test@test.com"]);
     await runCmd(["git", "config", "user.name", "Test"]);
-    await Deno.writeTextFile(`${tempDir}/test.txt`, "content\n");
+    await Deno.writeTextFile(join(tempDir, "test.txt"), "content\n");
     await runCmd(["git", "add", "test.txt"]);
     await runCmd(["git", "commit", "-m", "add file"]);
     const commit = (await resolveCommit("HEAD")).commit;

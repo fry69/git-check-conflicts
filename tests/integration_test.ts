@@ -4,6 +4,7 @@
  */
 
 import { expect } from "@std/expect";
+import { join } from "@std/path";
 import { runCmd, TempIndex } from "../src/lib.ts";
 
 interface TestRepo {
@@ -50,7 +51,7 @@ async function writeFile(
   filename: string,
   content: string,
 ): Promise<void> {
-  await Deno.writeTextFile(`${dir}/${filename}`, content);
+  await Deno.writeTextFile(join(dir, filename), content);
 }
 
 Deno.test("integration - repo with no conflicts", async () => {
@@ -362,7 +363,7 @@ Deno.test("integration - binary files", async () => {
       0x1A,
       0x0A,
     ]);
-    await Deno.writeFile(`${repo.dir}/image.bin`, binaryData);
+    await Deno.writeFile(join(repo.dir, "image.bin"), binaryData);
     await gitInRepo(repo.dir, ["add", "image.bin"]);
     await gitInRepo(repo.dir, ["commit", "-m", "add binary"]);
 
@@ -513,7 +514,7 @@ Deno.test("integration - rename/modify conflict with diff", async () => {
         theirsCommit,
       ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
-      const emptyTree = await getEmptyTreeHash();
+      const emptyTree = getEmptyTreeHash();
 
       // Should detect conflict
       const hasConflict = await checkConflictsWithMergeTree(
@@ -571,7 +572,7 @@ Deno.test("integration - file moved to subdirectory with modification", async ()
 
     // Create feature branch that moves file to subdirectory
     await gitInRepo(repo.dir, ["checkout", "-b", "feature"]);
-    await Deno.mkdir(`${repo.dir}/conf`, { recursive: true });
+    await Deno.mkdir(join(repo.dir, "conf"), { recursive: true });
     await gitInRepo(repo.dir, ["mv", "config.json", "conf/config.json"]);
     await writeFile(
       repo.dir,
@@ -621,7 +622,7 @@ Deno.test("integration - file moved to subdirectory with modification", async ()
         theirsCommit,
       ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
-      const emptyTree = await getEmptyTreeHash();
+      const emptyTree = getEmptyTreeHash();
 
       const hasConflict = await checkConflictsWithMergeTree(
         mergeBase || emptyTree,
@@ -720,7 +721,7 @@ Deno.test("integration - multiple files renamed and modified", async () => {
         theirsCommit,
       ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
-      const emptyTree = await getEmptyTreeHash();
+      const emptyTree = getEmptyTreeHash();
 
       const hasConflict = await checkConflictsWithMergeTree(
         mergeBase || emptyTree,
@@ -813,7 +814,7 @@ Deno.test("integration - rename without modification (no conflict)", async () =>
         theirsCommit,
       ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
-      const emptyTree = await getEmptyTreeHash();
+      const emptyTree = getEmptyTreeHash();
 
       // Should NOT detect conflict since content is unchanged
       const hasConflict = await checkConflictsWithMergeTree(
@@ -890,7 +891,7 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
         theirsCommit,
       ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
-      const emptyTree = await getEmptyTreeHash();
+      const emptyTree = getEmptyTreeHash();
 
       const hasConflict = await checkConflictsWithMergeTree(
         mergeBase || emptyTree,

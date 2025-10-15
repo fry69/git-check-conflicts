@@ -4,6 +4,7 @@
  */
 
 import { expect } from "@std/expect";
+import { fromFileUrl, join } from "@std/path";
 
 interface TestRepo {
   dir: string;
@@ -46,7 +47,9 @@ async function runScript(
   dir: string,
   args: string[],
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  const scriptPath = new URL("../src/main.ts", import.meta.url).pathname;
+  // Use fromFileUrl to properly convert file:// URL to OS-specific path
+  const scriptPath = fromFileUrl(new URL("../src/main.ts", import.meta.url));
+
   const command = new Deno.Command("deno", {
     args: [
       "run",
@@ -81,7 +84,7 @@ async function writeFile(
   filename: string,
   content: string,
 ): Promise<void> {
-  await Deno.writeTextFile(`${dir}/${filename}`, content);
+  await Deno.writeTextFile(join(dir, filename), content);
 }
 
 Deno.test("CLI - help flag", async () => {

@@ -172,7 +172,7 @@ async function main(): Promise<number> {
   otherRef = theirsResult.resolvedRef; // Use resolved name
 
   // Compute merge-base
-  const emptyTree = await getEmptyTreeHash();
+  const emptyTree = getEmptyTreeHash();
   const mbRes = await runCmd(["git", "merge-base", oursCommit, theirsCommit]);
   const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
 
