@@ -138,17 +138,17 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - id: determine-draft
-        name: Determine draft setting (default: true)
-          shell: bash
-          env:
-            INPUT_DRAFT: ${{ github.event.inputs.draft }}
-          run: |
-            # Default to true (draft) unless user explicitly passed 'false' as workflow_dispatch input
-            draft="true"
-            if [ -n "${INPUT_DRAFT:-}" ] && [ "${INPUT_DRAFT}" = "false" ]; then
-              draft="false"
-            fi
-            echo "draft=$draft" >> "$GITHUB_OUTPUT"
+        name: Determine draft setting
+        shell: bash
+        env:
+          INPUT_DRAFT: ${{ github.event.inputs.draft }}
+        run: |
+          # Default to true (draft) unless user explicitly passed 'false' as workflow_dispatch input
+          draft="true"
+          if [ -n "${INPUT_DRAFT:-}" ] && [ "${INPUT_DRAFT}" = "false" ]; then
+            draft="false"
+          fi
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
 
       - id: prepare-release-files
         name: Package latest build artifacts into zip files

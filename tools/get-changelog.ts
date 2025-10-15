@@ -18,7 +18,10 @@ let content: string;
 try {
   const md = await Deno.readTextFile("CHANGELOG.md");
   const lines = md.split(/\r?\n/);
-  const hdrRx = new RegExp(`^#{1,6}\\s*\\[?v?${escapeForRegex(version)}\\]?\\b`, "i");
+  const hdrRx = new RegExp(
+    `^#{1,6}\\s*\\[?v?${escapeForRegex(version)}\\]?\\b`,
+    "i",
+  );
   // also allow headings like "## 1.2.3" or "## v1.2.3"
   let start = -1;
   for (let i = 0; i < lines.length; i++) {
@@ -33,7 +36,8 @@ try {
     start = lines.findIndex((l) => unreleasedRx.test(l));
   }
   if (start === -1) {
-    content = `No changelog entry found for version ${version} and no 'Unreleased' section present.`;
+    content =
+      `No changelog entry found for version ${version} and no 'Unreleased' section present.`;
   } else {
     // gather until next same-or-higher-level heading (## or #)
     let end = lines.length;
@@ -46,7 +50,9 @@ try {
     content = lines.slice(start, end).join("\n").trim();
   }
 } catch (err) {
-  content = `Failed to read CHANGELOG.md: ${err instanceof Error ? err.message : String(err)}`;
+  content = `Failed to read CHANGELOG.md: ${
+    err instanceof Error ? err.message : String(err)
+  }`;
 }
 // Write multiline output for GITHUB_OUTPUT
 // Use the "name<<EOF" format so Actions handles newlines.
