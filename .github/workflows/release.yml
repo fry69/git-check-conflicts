@@ -64,6 +64,7 @@ jobs:
           if [ -z "${{ steps.meta.outputs.tool_version }}" ]; then echo "ERROR: tool_version empty"; exit 1; fi
           if [ -z "${{ steps.meta.outputs.entry }}" ]; then echo "ERROR: entry empty"; exit 1; fi
           if [ ! -f "${{ steps.meta.outputs.entry }}" ]; then echo "ERROR: entry file missing: ${{ steps.meta.outputs.entry }}"; exit 1; fi
+        shell: bash
 
       - name: Prepare output dir
         run: mkdir -p dist
