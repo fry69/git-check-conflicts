@@ -132,20 +132,71 @@ export async function fileDiffFor(
   file: string,
   oursCommit: string,
   theirsCommit: string,
+  mergeBase?: string,
 ): Promise<string | null> {
+  let renameInfo = "";
+
+  // If we have a merge-base, check for renames on each side
+  if (mergeBase) {
+    // Check our side for renames - don't filter by file since it may have been renamed
+    const ourRenames = await runCmd([
+      "git",
+      "diff",
+      "-M",
+      "--name-status",
+      "--diff-filter=R",
+      mergeBase,
+      oursCommit,
+    ]);
+
+    // Check their side for renames
+    const theirRenames = await runCmd([
+      "git",
+      "diff",
+      "-M",
+      "--name-status",
+      "--diff-filter=R",
+      mergeBase,
+      theirsCommit,
+    ]);
+
+    // Look for our file in the rename list (either as old or new name)
+    const ourRenameMatch = ourRenames.stdout?.split('\n')
+      .find(line => line.includes(file))
+      ?.match(/^R\d+\s+(\S+)\s+(\S+)$/);
+
+    const theirRenameMatch = theirRenames.stdout?.split('\n')
+      .find(line => line.includes(file))
+      ?.match(/^R\d+\s+(\S+)\s+(\S+)$/);
+
+    if (ourRenameMatch) {
+      const [, oldName, newName] = ourRenameMatch;
+      renameInfo = `⚠️  RENAME/MODIFY CONFLICT:\n   Your branch: renamed ${oldName} → ${newName}\n   Their branch: modified ${oldName}\n\n`;
+    } else if (theirRenameMatch) {
+      const [, oldName, newName] = theirRenameMatch;
+      renameInfo = `⚠️  MODIFY/RENAME CONFLICT:\n   Your branch: modified ${oldName}\n   Their branch: renamed ${oldName} → ${newName}\n\n`;
+    }
+  }
+
   const d = await runCmd([
     "git",
     "diff",
     "-U3",
     "--no-prefix",
+    "-M",
     oursCommit,
     theirsCommit,
     "--",
     file,
   ]);
-  if (d.stdout && d.stdout.trim()) return d.stdout;
-  if (d.stderr && d.stderr.trim()) return d.stderr;
-  return null;
+
+  const diffOutput = d.stdout?.trim() || d.stderr?.trim() || "";
+
+  if (renameInfo) {
+    return renameInfo + (diffOutput || "(No content diff available for renamed file)");
+  }
+
+  return diffOutput || null;
 }
 
 export interface ConflictCheckResult {

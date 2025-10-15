@@ -161,7 +161,7 @@ async function main(): Promise<number> {
 
       if (printDiffs) {
         for (const f of unmergedFiles) {
-          result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit);
+          result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit, mergeBase || undefined);
         }
       }
 
@@ -209,7 +209,7 @@ async function main(): Promise<number> {
 
     if (printDiffs) {
       for (const f of conflictingFiles) {
-        result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit);
+        result.diffs[f] = await fileDiffFor(f, oursCommit, theirsCommit, mergeBase || undefined);
       }
     }
 
