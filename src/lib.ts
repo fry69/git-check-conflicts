@@ -234,7 +234,19 @@ export async function checkConflictsWithMergeTree(
     oursCommit,
     theirsCommit,
   ]);
-  return /<<<<<<< /m.test(mergeTreeRes.stdout);
+
+  // Check for content conflicts (markers)
+  if (/<<<<<<< /m.test(mergeTreeRes.stdout)) {
+    return true;
+  }
+
+  // Check for delete/modify and other structural conflicts
+  // These appear at the start of lines in merge-tree output
+  if (/^(removed in (local|remote)|added in (local|remote)|changed in both)/m.test(mergeTreeRes.stdout)) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function getChangedFilesBetween(

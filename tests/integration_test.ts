@@ -357,3 +357,46 @@ Deno.test("integration - no common ancestor", async () => {
     await repo.cleanup();
   }
 });
+
+Deno.test("integration - delete/modify conflict", async () => {
+  const repo = await createTestRepo("delete_modify_conflict");
+  try {
+    await setupBasicRepo(repo.dir);
+
+    // Create initial file
+    await writeFile(repo.dir, "file.txt", "original content\n");
+    await gitInRepo(repo.dir, ["add", "file.txt"]);
+    await gitInRepo(repo.dir, ["commit", "-m", "add file"]);
+    const base = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
+
+    // Branch 1: delete the file
+    await gitInRepo(repo.dir, ["checkout", "-b", "delete-branch"]);
+    await gitInRepo(repo.dir, ["rm", "file.txt"]);
+    await gitInRepo(repo.dir, ["commit", "-m", "delete file"]);
+    const deleteCommit = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
+
+    // Branch 2: modify the file
+    await gitInRepo(repo.dir, ["checkout", base.stdout]);
+    await gitInRepo(repo.dir, ["checkout", "-b", "modify-branch"]);
+    await writeFile(repo.dir, "file.txt", "modified content\n");
+    await gitInRepo(repo.dir, ["add", "file.txt"]);
+    await gitInRepo(repo.dir, ["commit", "-m", "modify file"]);
+    const modifyCommit = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
+
+    // Check for conflicts using merge-tree
+    const mergeBase = await gitInRepo(repo.dir, ["merge-base", deleteCommit.stdout, modifyCommit.stdout]);
+    expect(mergeBase.code).toBe(0);
+
+    const mergeTreeResult = await gitInRepo(repo.dir, [
+      "merge-tree",
+      mergeBase.stdout,
+      deleteCommit.stdout,
+      modifyCommit.stdout,
+    ]);
+
+    // Should detect delete/modify conflict
+    expect(mergeTreeResult.stdout).toMatch(/removed in (local|remote)/);
+  } finally {
+    await repo.cleanup();
+  }
+});
