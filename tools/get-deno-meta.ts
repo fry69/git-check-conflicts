@@ -39,17 +39,24 @@ const version = raw.version;
 let entry;
 if (!raw.exports) {
   console.error("ERROR: 'exports' field is required in deno.json");
-  console.error('  Expected: "exports": "./src/main.ts" or "exports": { ".": "./src/main.ts" }');
+  console.error(
+    '  Expected: "exports": "./src/main.ts" or "exports": { ".": "./src/main.ts" }',
+  );
   Deno.exit(1);
 }
 
 if (typeof raw.exports === "string") {
   entry = raw.exports;
-} else if (typeof raw.exports === "object" && raw.exports["."] && typeof raw.exports["."] === "string") {
+} else if (
+  typeof raw.exports === "object" && raw.exports["."] &&
+  typeof raw.exports["."] === "string"
+) {
   entry = raw.exports["."];
 } else {
   console.error("ERROR: Invalid 'exports' format in deno.json");
-  console.error('  Expected: "exports": "./src/main.ts" or "exports": { ".": "./src/main.ts" }');
+  console.error(
+    '  Expected: "exports": "./src/main.ts" or "exports": { ".": "./src/main.ts" }',
+  );
   Deno.exit(1);
 }
 

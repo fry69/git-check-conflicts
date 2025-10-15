@@ -1,4 +1,5 @@
 name: Publish JSR
+
 on:
   workflow_run:
     workflows:
