@@ -1,0 +1,204 @@
+name: Build & (Draft) Release Deno binaries
+
+# Tag pushes (recommended) and manual runs (workflow_dispatch)
+on:
+  # push:
+  #   tags:
+  #     - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Optional: tag to release (eg. v1.2.3). If empty the workflow will use v<tool_version>."
+        required: false
+        default: ""
+      release_name:
+        description: "Optional: release name/title (defaults to '<tool_name> <tool_version>')."
+        required: false
+        default: ""
+      draft:
+        description: "Create release as draft? (true/false). Default: true."
+        required: false
+        default: "true"
+
+permissions:
+  contents: write
+
+jobs:
+  compile:
+    name: Build binaries
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            ext: ""
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            ext: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: ".exe"
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            ext: ""
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+
+      - id: meta
+        name: Extract tool metadata
+        run: deno run -A tools/get-deno-meta.ts
+
+      - name: Validate metadata (quick)
+        run: |
+          if [ -z "${{ steps.meta.outputs.tool_name }}" ]; then echo "ERROR: tool_name empty"; exit 1; fi
+          if [ -z "${{ steps.meta.outputs.tool_version }}" ]; then echo "ERROR: tool_version empty"; exit 1; fi
+          if [ -z "${{ steps.meta.outputs.entry }}" ]; then echo "ERROR: entry empty"; exit 1; fi
+          if [ ! -f "${{ steps.meta.outputs.entry }}" ]; then echo "ERROR: entry file missing: ${{ steps.meta.outputs.entry }}"; exit 1; fi
+
+      - name: Prepare output dir
+        run: mkdir -p dist
+
+      - name: Compile with deno
+        run: |
+          set -e
+          OUT="dist/${{ steps.meta.outputs.tool_name }}-${{ steps.meta.outputs.tool_version }}-${{ matrix.target }}${{ matrix.ext }}"
+          echo "Compiling: target=${{ matrix.target }} -> ${OUT}"
+          mkdir -p dist
+          deno compile -A --target=${{ matrix.target }} --output="${OUT}" "${{ steps.meta.outputs.entry }}"
+        shell: bash
+
+      - name: Show dist
+        run: ls -la dist || true
+        shell: bash
+
+      - name: Upload compiled artifact (per-target)
+        uses: actions/upload-artifact@v4
+        with:
+          # artifact name identifies tool/version/target, so later we can find them easily
+          name: ${{ steps.meta.outputs.tool_name }}-${{ steps.meta.outputs.tool_version }}-${{ matrix.target }}
+          path: dist/**
+
+  publish:
+    name: Create (Draft) Release and attach artifacts
+    runs-on: ubuntu-latest
+    needs: compile
+    steps:
+      - name: Checkout (shallow)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      - name: Download artifacts produced by this workflow run
+        uses: actions/download-artifact@v4
+        with:
+          # download all artifacts uploaded by the compile jobs of this run into ./artifacts/
+          path: artifacts
+
+      - name: Setup Deno (for changelog extraction)
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+          cache: true
+
+      - id: meta
+        name: Re-extract tool metadata
+        run: deno run -A tools/get-deno-meta.ts
+
+      - id: determine-tag
+        name: Determine tag to use for release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          TOOL_VERSION: ${{ steps.meta.outputs.tool_version }}
+        run: |
+          # Priority:
+          # 1) If pushed tag event -> use that tag name
+          # 2) Else if workflow_dispatch input 'tag' provided -> use that
+          # 3) Else fallback to v<tool_version>
+          tag=""
+          if [ "$EVENT_NAME" = "push" ] && [[ "$GITHUB_REF" =~ refs/tags/ ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+          elif [ -n "$INPUT_TAG" ] && [ "$INPUT_TAG" != "" ]; then
+            tag="$INPUT_TAG"
+          else
+            tag="v${TOOL_VERSION}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - id: determine-draft
+        name: Determine draft setting (default: true)
+          shell: bash
+          env:
+            INPUT_DRAFT: ${{ github.event.inputs.draft }}
+          run: |
+            # Default to true (draft) unless user explicitly passed 'false' as workflow_dispatch input
+            draft="true"
+            if [ -n "${INPUT_DRAFT:-}" ] && [ "${INPUT_DRAFT}" = "false" ]; then
+              draft="false"
+            fi
+            echo "draft=$draft" >> "$GITHUB_OUTPUT"
+
+      - id: prepare-release-files
+        name: Package latest build artifacts into zip files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          # artifacts/* contains directories named after each artifact (the same names you uploaded in compile).
+          # Zip each artifact directory into a single archive for uploading to the release.
+          found=false
+          for d in artifacts/*; do
+            if [ -d "$d" ]; then
+              found=true
+              name=$(basename "$d")
+              echo "Packaging artifact directory '$d' -> release/${name}.zip"
+              # Create zip with the contents of the artifact directory (do not preserve parent dir inside zip)
+              # Use -r to recurse; -j is not used because we want subdirs to remain; but we will zip the directory contents.
+              (cd "$d" && zip -r -q "../../release/${name}.zip" .)
+            fi
+          done
+          if [ "$found" = "false" ]; then
+            echo "ERROR: No artifacts found under artifacts/ — aborting"
+            exit 1
+          fi
+          ls -la release
+          echo "release_dir=release" >> "$GITHUB_OUTPUT"
+
+      - id: changelog
+        name: Extract CHANGELOG.md entry for version
+        # Pass the version (without leading v) to the changelog helper
+        shell: bash
+        env:
+          TAG: ${{ steps.determine-tag.outputs.tag }}
+        run: |
+          ver="${TAG#v}"
+          deno run -A tools/get-changelog.ts "$ver"
+          # tools/get-changelog writes 'changelog' to GITHUB_OUTPUT itself
+
+      - name: Create Release (draft by default) & upload packaged artifact zips
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.determine-tag.outputs.tag }}
+          name: ${{ github.event.inputs.release_name != '' && github.event.inputs.release_name || format('%s %s', steps.meta.outputs.tool_name, steps.meta.outputs.tool_version) }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: ${{ steps.determine-draft.outputs.draft == 'true' }}
+          files: release/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Output release url
+        if: success()
+        run: |
+          echo "Release created (or updated). Check Releases page in GitHub."

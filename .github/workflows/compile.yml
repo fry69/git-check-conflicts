@@ -2,9 +2,9 @@ name: Build Deno binaries
 
 # Trigger on tags (recommended for releases) and allow manual run
 on:
-  push:
-    tags:
-      - "v*" # e.g. v1.2.3 — run when you push a release tag
+  # push:
+  #   tags:
+  #     - "v*" # e.g. v1.2.3 — run when you push a release tag
   workflow_dispatch: # manual trigger
 
 permissions:
