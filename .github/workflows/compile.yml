@@ -63,6 +63,27 @@ jobs:
       - name: Prepare output dir
         run: mkdir -p dist
 
+      - name: Validate metadata
+        shell: bash
+        run: |
+          if [ -z "${{ steps.meta.outputs.tool_name }}" ]; then
+            echo "ERROR: tool_name is empty"
+            exit 1
+          fi
+          if [ -z "${{ steps.meta.outputs.tool_version }}" ]; then
+            echo "ERROR: tool_version is empty"
+            exit 1
+          fi
+          if [ -z "${{ steps.meta.outputs.entry }}" ]; then
+            echo "ERROR: entry is empty"
+            exit 1
+          fi
+          if [ ! -f "${{ steps.meta.outputs.entry }}" ]; then
+            echo "ERROR: Entry point file '${{ steps.meta.outputs.entry }}' does not exist"
+            exit 1
+          fi
+          echo "Validation passed"
+
       - name: Compile with deno
         # Use --allow-all to avoid permission surprises during compilation.
         # If you'd rather limit permissions, change this to the exact flags you need.
