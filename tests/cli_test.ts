@@ -70,7 +70,7 @@ async function runScript(
 }
 
 async function setupRepo(dir: string): Promise<void> {
-  await runGit(dir, ["init"]);
+  await runGit(dir, ["init", "-b", "main"]);
   await runGit(dir, ["config", "user.email", "test@test.com"]);
   await runGit(dir, ["config", "user.name", "Test User"]);
   await runGit(dir, ["commit", "--allow-empty", "-m", "initial"]);

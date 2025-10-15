@@ -39,7 +39,7 @@ async function gitInRepo(
 }
 
 async function setupBasicRepo(dir: string): Promise<void> {
-  await gitInRepo(dir, ["init"]);
+  await gitInRepo(dir, ["init", "-b", "main"]);
   await gitInRepo(dir, ["config", "user.email", "test@test.com"]);
   await gitInRepo(dir, ["config", "user.name", "Test User"]);
   await gitInRepo(dir, ["commit", "--allow-empty", "-m", "initial commit"]);
