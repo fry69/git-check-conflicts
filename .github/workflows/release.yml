@@ -192,10 +192,10 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.determine-tag.outputs.tag }}
-          name: ${{ github.event.inputs.release_name != '' && github.event.inputs.release_name || format('%s %s', steps.meta.outputs.tool_name, steps.meta.outputs.tool_version) }}
+          name: ${{ github.event.inputs.release_name != '' && github.event.inputs.release_name || format('{0} {1}', steps.meta.outputs.tool_name, steps.meta.outputs.tool_version) }}
           body: ${{ steps.changelog.outputs.changelog }}
           draft: ${{ steps.determine-draft.outputs.draft == 'true' }}
-          files: release/*.zip
+          artifacts: "release/*.zip"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
