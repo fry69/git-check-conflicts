@@ -1,4 +1,11 @@
 {
+  "name": "@fry69/git-check-conflicts",
+  "version": "0.1.0",
+  "description": "A CLI tool to check for merge conflicts in git repositories.",
+  "exports": {
+    ".": "./src/main.ts"
+  },
+  "license": "MIT",
   "permissions": {
     "default": {
       "run": true,
@@ -19,5 +26,14 @@
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.23",
     "@std/expect": "jsr:@std/expect@1"
+  },
+  "publish": {
+    "include": [
+      "deno.json",
+      "src/",
+      "README.md",
+      "CHANGELOG.md",
+      "LICENSE"
+    ]
   }
 }
