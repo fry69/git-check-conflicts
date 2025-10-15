@@ -40,7 +40,7 @@ import {
   TempIndex,
 } from "./lib.ts";
 
-const VERSION = "0.1.0";
+const VERSION = "0.0.1";
 const SCRIPT_NAME = "git-check-conflicts";
 
 /**
