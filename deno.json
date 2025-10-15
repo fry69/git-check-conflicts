@@ -1,11 +1,19 @@
 {
+  "permissions": {
+    "default": {
+      "run": true,
+      "read": true,
+      "write": true,
+      "env": true
+    }
+  },
   "tasks": {
     "check": "deno fmt --check && deno lint && deno check && deno task test",
-    "test": "deno test --allow-run --allow-read --allow-write --allow-env",
-    "test:unit": "deno test --allow-run --allow-read --allow-write --allow-env tests/main_lib_test.ts",
-    "test:integration": "deno test --allow-run --allow-read --allow-write --allow-env tests/integration_test.ts",
-    "test:cli": "deno test --allow-run --allow-read --allow-write --allow-env tests/cli_test.ts",
-    "compile": "deno compile --allow-run --allow-read --allow-write --allow-env --output git-check-conflicts src/main.ts"
+    "test": "deno test -P",
+    "test:unit": "deno test -P tests/main_lib_test.ts",
+    "test:integration": "deno test -P tests/integration_test.ts",
+    "test:cli": "deno test -P tests/cli_test.ts",
+    "compile": "deno compile -P --output git-check-conflicts src/main.ts"
   },
   "imports": {
     "@std/cli": "jsr:@std/cli@^1.0.23",

@@ -5,26 +5,28 @@ Pre-merge conflict detection tool for Git repositories. Checks if merging a bran
 ## Usage
 
 ```bash
-deno run --allow-all src/main.ts [options] [branch]
+deno run -P src/main.ts [options] [branch]
 ```
+
+The tool uses named permissions defined in `deno.json`. Use `-P` to apply the default permission set, or use `--allow-all` for full permissions.
 
 ### Basic Examples
 
 ```bash
 # Check current branch against auto-detected default branch
-deno run --allow-all src/main.ts
+deno run -P src/main.ts
 
 # Check against specific branch
-deno run --allow-all src/main.ts main
+deno run -P src/main.ts main
 
 # Fetch remotes first
-deno run --allow-all src/main.ts --fetch origin/main
+deno run -P src/main.ts --fetch origin/main
 
 # Show diffs for conflicting files
-deno run --allow-all src/main.ts --diff feature-branch
+deno run -P src/main.ts --diff feature-branch
 
 # JSON output for CI/CD
-deno run --allow-all src/main.ts --json main
+deno run -P src/main.ts --json main
 ```
 
 ## Options
@@ -100,13 +102,13 @@ Compile for different platforms:
 
 ```bash
 # Linux x86_64
-deno compile --target x86_64-unknown-linux-gnu --allow-all --output git-check-conflicts-linux src/main.ts
+deno compile --target x86_64-unknown-linux-gnu -P --output git-check-conflicts-linux src/main.ts
 
 # macOS ARM64
-deno compile --target aarch64-apple-darwin --allow-all --output git-check-conflicts-macos-arm src/main.ts
+deno compile --target aarch64-apple-darwin -P --output git-check-conflicts-macos-arm src/main.ts
 
 # Windows
-deno compile --target x86_64-pc-windows-msvc --allow-all --output git-check-conflicts.exe src/main.ts
+deno compile --target x86_64-pc-windows-msvc -P --output git-check-conflicts.exe src/main.ts
 ```
 
 ## Requirements
