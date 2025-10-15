@@ -128,9 +128,9 @@ Deno.test("CLI - conflicts detected", async () => {
     await runGit(repo.dir, ["add", "conflict.txt"]);
     await runGit(repo.dir, ["commit", "-m", "modify in branch1"]);
 
-    // Main branch
-    await runGit(repo.dir, ["checkout", baseCommit]);
-    await runGit(repo.dir, ["checkout", "-b", "main"]);
+    // Main branch - reset to base and modify
+    await runGit(repo.dir, ["checkout", "main"]);
+    await runGit(repo.dir, ["reset", "--hard", baseCommit]);
     await writeFile(repo.dir, "conflict.txt", "line1\nmodified in main\nline3\n");
     await runGit(repo.dir, ["add", "conflict.txt"]);
     await runGit(repo.dir, ["commit", "-m", "modify in main"]);
@@ -196,8 +196,8 @@ Deno.test("CLI - json output with conflicts", async () => {
     await runGit(repo.dir, ["add", "conflict.txt"]);
     await runGit(repo.dir, ["commit", "-m", "branch1"]);
 
-    await runGit(repo.dir, ["checkout", base]);
-    await runGit(repo.dir, ["checkout", "-b", "main"]);
+    await runGit(repo.dir, ["checkout", "main"]);
+    await runGit(repo.dir, ["reset", "--hard", base]);
     await writeFile(repo.dir, "conflict.txt", "main\n");
     await runGit(repo.dir, ["add", "conflict.txt"]);
     await runGit(repo.dir, ["commit", "-m", "main"]);
@@ -228,8 +228,8 @@ Deno.test("CLI - diff output", async () => {
     await runGit(repo.dir, ["add", "file.txt"]);
     await runGit(repo.dir, ["commit", "-m", "branch1"]);
 
-    await runGit(repo.dir, ["checkout", base]);
-    await runGit(repo.dir, ["checkout", "-b", "main"]);
+    await runGit(repo.dir, ["checkout", "main"]);
+    await runGit(repo.dir, ["reset", "--hard", base]);
     await writeFile(repo.dir, "file.txt", "line1\nmain\nline3\n");
     await runGit(repo.dir, ["add", "file.txt"]);
     await runGit(repo.dir, ["commit", "-m", "main"]);
@@ -334,8 +334,8 @@ Deno.test("CLI - combined flags", async () => {
     await runGit(repo.dir, ["add", "file.txt"]);
     await runGit(repo.dir, ["commit", "-m", "branch1"]);
 
-    await runGit(repo.dir, ["checkout", base]);
-    await runGit(repo.dir, ["checkout", "-b", "main"]);
+    await runGit(repo.dir, ["checkout", "main"]);
+    await runGit(repo.dir, ["reset", "--hard", base]);
     await writeFile(repo.dir, "file.txt", "main\n");
     await runGit(repo.dir, ["add", "file.txt"]);
     await runGit(repo.dir, ["commit", "-m", "main"]);
@@ -346,7 +346,6 @@ Deno.test("CLI - combined flags", async () => {
 
     const json = JSON.parse(result.stdout);
     expect(json.conflicts).toBe(true);
-    expect(json.diffs).toHaveProperty("file.txt");
     expect(json.diffs["file.txt"]).toBeTruthy();
   } finally {
     await repo.cleanup();
@@ -368,8 +367,8 @@ Deno.test("CLI - short alias for diff", async () => {
     await runGit(repo.dir, ["add", "file.txt"]);
     await runGit(repo.dir, ["commit", "-m", "branch1"]);
 
-    await runGit(repo.dir, ["checkout", base]);
-    await runGit(repo.dir, ["checkout", "-b", "main"]);
+    await runGit(repo.dir, ["checkout", "main"]);
+    await runGit(repo.dir, ["reset", "--hard", base]);
     await writeFile(repo.dir, "file.txt", "main\n");
     await runGit(repo.dir, ["add", "file.txt"]);
     await runGit(repo.dir, ["commit", "-m", "main"]);

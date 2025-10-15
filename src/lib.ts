@@ -234,7 +234,7 @@ export async function checkConflictsWithMergeTree(
     oursCommit,
     theirsCommit,
   ]);
-  return /^<<<<<<< /m.test(mergeTreeRes.stdout);
+  return /<<<<<<< /m.test(mergeTreeRes.stdout);
 }
 
 export async function getChangedFilesBetween(
