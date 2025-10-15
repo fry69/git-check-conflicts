@@ -5,9 +5,11 @@ This directory contains comprehensive tests for the `git-check-conflicts` tool.
 ## Test Structure
 
 ### 1. Unit Tests (`main_lib_test.ts`)
+
 Tests individual functions in isolation.
 
 **Coverage:**
+
 - Command execution (`runCmd`)
 - Git operations (getCurrentRef, resolveCommit, etc.)
 - Error handling (GitError class)
@@ -16,14 +18,17 @@ Tests individual functions in isolation.
 - Tree and commit resolution
 
 **Run unit tests:**
+
 ```bash
 deno task test:unit
 ```
 
 ### 2. Integration Tests (`integration_test.ts`)
+
 Tests with real Git repositories created on-the-fly.
 
 **Test Scenarios:**
+
 - ✅ Repository with no conflicts
 - ✅ Repository with conflicts
 - ✅ Multiple conflicting files
@@ -35,14 +40,17 @@ Tests with real Git repositories created on-the-fly.
 - ✅ TempIndex with read-tree conflict detection
 
 **Run integration tests:**
+
 ```bash
 deno task test:integration
 ```
 
 ### 3. CLI Tests (`cli_test.ts`)
+
 End-to-end tests of the command-line interface.
 
 **Test Scenarios:**
+
 - ✅ Help flag (`--help`)
 - ✅ No conflicts scenario
 - ✅ Conflicts detected
@@ -57,6 +65,7 @@ End-to-end tests of the command-line interface.
 - ✅ Short aliases
 
 **Run CLI tests:**
+
 ```bash
 deno task test:cli
 ```
@@ -77,12 +86,15 @@ deno coverage coverage --lcov > coverage.lcov
 ## Test Conventions
 
 ### Test Naming
+
 - `Deno.test("category - description", ...)`
 - Categories: `unit`, `integration`, `CLI`
 - Descriptions: clear, concise action or scenario
 
 ### Assertions
+
 Using `@std/expect` for readable assertions:
+
 ```typescript
 expect(result).toBe(expected);
 expect(array).toContain(item);
@@ -91,12 +103,14 @@ expect(value).toHaveProperty("key");
 ```
 
 ### Test Isolation
+
 - Each test creates its own temporary Git repository
 - Cleanup happens in `finally` blocks
 - Tests can run in parallel
 - No shared state between tests
 
 ### Test Structure
+
 ```typescript
 Deno.test("test name", async () => {
   // Arrange
@@ -118,17 +132,21 @@ Deno.test("test name", async () => {
 ## Debugging Tests
 
 ### Run a single test
+
 ```bash
 deno test --allow-all tests/main_lib_test.ts --filter "runCmd - successful"
 ```
 
 ### Run with debugging output
+
 ```bash
 deno test --allow-all --log-level=debug
 ```
 
 ### Keep temporary directories
+
 Modify cleanup to preserve test repos:
+
 ```typescript
 const cleanup = async () => {
   console.log("Test repo at:", tempDir);
@@ -140,7 +158,9 @@ const cleanup = async () => {
 ## Adding New Tests
 
 ### For new library functions
+
 Add to `main_lib_test.ts`:
+
 ```typescript
 Deno.test("functionName - scenario", async () => {
   const result = await functionName(input);
@@ -149,7 +169,9 @@ Deno.test("functionName - scenario", async () => {
 ```
 
 ### For new CLI features
+
 Add to `cli_test.ts`:
+
 ```typescript
 Deno.test("CLI - new feature", async () => {
   const repo = await createTestRepo("feature");
@@ -169,11 +191,13 @@ Deno.test("CLI - new feature", async () => {
 ## Test Performance
 
 Current test suite metrics:
+
 - **Total tests**: 50+
 - **Typical runtime**: ~5-10 seconds (depending on system)
 - **Git repos created**: 1 per test (automatically cleaned up)
 
 ### Optimizations
+
 - Tests run in parallel by default
 - Minimal commits in test repos (use `--allow-empty` where possible)
 - Temp directories auto-cleaned
@@ -182,6 +206,7 @@ Current test suite metrics:
 ## Coverage Goals
 
 Target coverage:
+
 - ✅ Functions: >90%
 - ✅ Lines: >85%
 - ✅ Branches: >80%
@@ -190,6 +215,7 @@ Target coverage:
 ## Continuous Integration
 
 Add to CI pipeline:
+
 ```yaml
 - name: Run tests
   run: deno task test
@@ -212,18 +238,22 @@ Add to CI pipeline:
 ### Test failures
 
 **"Cannot find git"**
+
 - Ensure Git is installed and in PATH
 
 **"Permission denied"**
+
 - Check file permissions on test directory
 - Verify `--allow-read`, `--allow-write`, `--allow-run`, `--allow-env` flags
 
 **"Temp directory not cleaned"**
+
 - Check available disk space
 - Verify write permissions to temp directory
 - Tests should auto-cleanup even on failure
 
 **"Git command timeout"**
+
 - Large repositories or slow disk may cause issues
 - Check system load
 - Increase test timeout if needed

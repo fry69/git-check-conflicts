@@ -24,7 +24,10 @@ async function createTestRepo(name: string): Promise<TestRepo> {
   return { dir: tempDir, cleanup };
 }
 
-async function runGit(dir: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+async function runGit(
+  dir: string,
+  args: string[],
+): Promise<{ code: number; stdout: string; stderr: string }> {
   const command = new Deno.Command("git", {
     args,
     cwd: dir,
@@ -45,7 +48,15 @@ async function runScript(
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const scriptPath = new URL("../src/main.ts", import.meta.url).pathname;
   const command = new Deno.Command("deno", {
-    args: ["run", "--allow-run", "--allow-read", "--allow-write", "--allow-env", scriptPath, ...args],
+    args: [
+      "run",
+      "--allow-run",
+      "--allow-read",
+      "--allow-write",
+      "--allow-env",
+      scriptPath,
+      ...args,
+    ],
     cwd: dir,
     stdout: "piped",
     stderr: "piped",
@@ -65,7 +76,11 @@ async function setupRepo(dir: string): Promise<void> {
   await runGit(dir, ["commit", "--allow-empty", "-m", "initial"]);
 }
 
-async function writeFile(dir: string, filename: string, content: string): Promise<void> {
+async function writeFile(
+  dir: string,
+  filename: string,
+  content: string,
+): Promise<void> {
   await Deno.writeTextFile(`${dir}/${filename}`, content);
 }
 
@@ -124,14 +139,22 @@ Deno.test("CLI - conflicts detected", async () => {
 
     // Branch 1
     await runGit(repo.dir, ["checkout", "-b", "branch1"]);
-    await writeFile(repo.dir, "conflict.txt", "line1\nmodified in branch1\nline3\n");
+    await writeFile(
+      repo.dir,
+      "conflict.txt",
+      "line1\nmodified in branch1\nline3\n",
+    );
     await runGit(repo.dir, ["add", "conflict.txt"]);
     await runGit(repo.dir, ["commit", "-m", "modify in branch1"]);
 
     // Main branch - reset to base and modify
     await runGit(repo.dir, ["checkout", "main"]);
     await runGit(repo.dir, ["reset", "--hard", baseCommit]);
-    await writeFile(repo.dir, "conflict.txt", "line1\nmodified in main\nline3\n");
+    await writeFile(
+      repo.dir,
+      "conflict.txt",
+      "line1\nmodified in main\nline3\n",
+    );
     await runGit(repo.dir, ["add", "conflict.txt"]);
     await runGit(repo.dir, ["commit", "-m", "modify in main"]);
 

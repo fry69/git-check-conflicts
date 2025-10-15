@@ -1,14 +1,31 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-write --allow-env
 /**
- * git-check-conflicts.ts - CLI entry point
+ * @module
  *
- * Main executable that uses the library functions from lib.ts
+ * Git conflict detection CLI tool.
+ *
+ * This module provides a command-line interface for detecting merge conflicts
+ * between Git branches without performing an actual merge. It uses Git's
+ * read-tree and merge-tree commands to simulate merges and identify conflicts.
+ *
+ * @example
+ * ```bash
+ * # Check for conflicts with default branch
+ * deno run -P main.ts
+ *
+ * # Check against specific branch with diffs
+ * deno run -P main.ts --diff develop
+ *
+ * # Output JSON for CI/CD
+ * deno run -P main.ts --json develop
+ * ```
  */
 
 import { parseArgs } from "@std/cli/parse-args";
 import {
   checkConflictsWithMergeTree,
   checkConflictsWithReadTree,
+  type ConflictCheckResult,
   detectDefaultBranch,
   fetchAll,
   getConflictingFilesFromMergeTree,
@@ -21,9 +38,13 @@ import {
   revToTree,
   runCmd,
   TempIndex,
-  type ConflictCheckResult,
 } from "./lib.ts";
 
+/**
+ * Displays usage information for the CLI tool.
+ *
+ * @param prog - Program name to display in usage message
+ */
 function usage(prog = "git-check-conflicts.ts") {
   console.log(
     `Usage: deno run --allow-run --allow-read --allow-write --allow-env ${prog} [--fetch] [--diff|-d] [--json] [other-branch-or-ref]
@@ -48,6 +69,26 @@ Exit codes:
   );
 }
 
+/**
+ * Main entry point for the conflict detection CLI.
+ *
+ * This function orchestrates the entire conflict detection workflow:
+ * 1. Validates Git repository
+ * 2. Optionally fetches remote updates
+ * 3. Detects or uses provided branch to compare against
+ * 4. Resolves commits and finds merge base
+ * 5. Checks for conflicts using read-tree (primary) or merge-tree (fallback)
+ * 6. Outputs results in human-readable or JSON format
+ *
+ * @returns Promise resolving to exit code: 0 (no conflicts), 1 (conflicts), 2 (error)
+ *
+ * @example
+ * ```ts
+ * // Programmatic usage (if not using import.meta.main)
+ * const exitCode = await main();
+ * Deno.exit(exitCode);
+ * ```
+ */
 async function main(): Promise<number> {
   // Parse arguments
   const parsed = parseArgs(Deno.args, {
@@ -161,7 +202,12 @@ async function main(): Promise<number> {
 
       if (printDiffs) {
         for (const f of unmergedFiles) {
-          result.files[f] = await getFileConflictDetail(f, oursCommit, theirsCommit, mergeBase || undefined);
+          result.files[f] = await getFileConflictDetail(
+            f,
+            oursCommit,
+            theirsCommit,
+            mergeBase || undefined,
+          );
         }
       }
 
@@ -174,13 +220,23 @@ async function main(): Promise<number> {
       for (const f of unmergedFiles) console.log(f);
 
       if (printDiffs) {
-        console.log("\nUnified diffs (ours -> theirs) for each conflicting file:");
+        console.log(
+          "\nUnified diffs (ours -> theirs) for each conflicting file:",
+        );
         for (const f of unmergedFiles) {
           console.log("\n--- " + f + " ---");
           const fileDetail = result.files[f];
           if (fileDetail?.message) {
-            console.log(`⚠️  ${fileDetail.conflict_type.toUpperCase().replace(/_/g, "/")} CONFLICT:`);
-            console.log(fileDetail.message.split('\n').map(line => `   ${line}`).join('\n'));
+            console.log(
+              `⚠️  ${
+                fileDetail.conflict_type.toUpperCase().replace(/_/g, "/")
+              } CONFLICT:`,
+            );
+            console.log(
+              fileDetail.message.split("\n").map((line) => `   ${line}`).join(
+                "\n",
+              ),
+            );
             console.log();
           }
           if (fileDetail?.diff) console.log(fileDetail.diff);
@@ -214,7 +270,12 @@ async function main(): Promise<number> {
 
     if (printDiffs) {
       for (const f of conflictingFiles) {
-        result.files[f] = await getFileConflictDetail(f, oursCommit, theirsCommit, mergeBase || undefined);
+        result.files[f] = await getFileConflictDetail(
+          f,
+          oursCommit,
+          theirsCommit,
+          mergeBase || undefined,
+        );
       }
     }
 
@@ -232,8 +293,16 @@ async function main(): Promise<number> {
           console.log("\n--- " + f + " ---");
           const fileDetail = result.files[f];
           if (fileDetail?.message) {
-            console.log(`⚠️  ${fileDetail.conflict_type.toUpperCase().replace(/_/g, "/")} CONFLICT:`);
-            console.log(fileDetail.message.split('\n').map(line => `   ${line}`).join('\n'));
+            console.log(
+              `⚠️  ${
+                fileDetail.conflict_type.toUpperCase().replace(/_/g, "/")
+              } CONFLICT:`,
+            );
+            console.log(
+              fileDetail.message.split("\n").map((line) => `   ${line}`).join(
+                "\n",
+              ),
+            );
             console.log();
           }
           if (fileDetail?.diff) console.log(fileDetail.diff);

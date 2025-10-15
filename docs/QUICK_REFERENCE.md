@@ -17,12 +17,12 @@ deno test --allow-all --coverage=coverage
 
 ## 📊 Current Status
 
-| Category | Tests | Passing | Status |
-|----------|-------|---------|--------|
-| Unit | 27 | 27 (100%) | ✅ |
-| Integration | 10 | 10 (100%) | ✅ |
-| CLI | 12 | 7 (58%) | ⚠️ |
-| **Total** | **49** | **44 (90%)** | **🎯** |
+| Category    | Tests  | Passing      | Status |
+| ----------- | ------ | ------------ | ------ |
+| Unit        | 27     | 27 (100%)    | ✅     |
+| Integration | 10     | 10 (100%)    | ✅     |
+| CLI         | 12     | 7 (58%)      | ⚠️     |
+| **Total**   | **49** | **44 (90%)** | **🎯** |
 
 ## 📁 Files Created
 
@@ -46,11 +46,13 @@ QUICK_REFERENCE.md      # This file
 ## 🎯 Key Improvements
 
 ### Code Quality
+
 - ⭐ Testability: 1/5 → 5/5
 - ⭐ Organization: 2/5 → 4/5
 - ⭐ Maintainability: 3/5 → 4/5
 
 ### New Features
+
 - ✅ `TempIndex` class for resource management
 - ✅ `GitError` class for consistent errors
 - ✅ All functions pure and testable
@@ -95,6 +97,7 @@ class GitError extends Error {
 ## 🐛 Known Issues
 
 ### CLI Tests (5 failing)
+
 **Symptom**: Tests expect exit code 1 (conflicts) but get 0 (no conflicts)
 
 **Cause**: Test scenarios too simple, Git auto-merges
@@ -106,12 +109,14 @@ class GitError extends Error {
 ## 📋 Code Review Highlights
 
 ### High Priority Issues
+
 1. ✅ Type safety - Fixed in main_lib.ts
 2. ✅ Resource cleanup - Fixed with TempIndex class
 3. ✅ Testability - Fixed by separation of concerns
 4. ✅ Error handling - Fixed with GitError class
 
 ### What's Still TODO
+
 - [ ] Update main.ts to use refactored lib
 - [ ] Add JSDoc comments
 - [ ] Fix CLI test scenarios
@@ -120,6 +125,7 @@ class GitError extends Error {
 ## 🎨 Example Usage
 
 ### Using the Library
+
 ```typescript
 import { getCurrentRef, resolveCommit, TempIndex } from "./src/main_lib.ts";
 
@@ -143,6 +149,7 @@ try {
 ```
 
 ### Writing Tests
+
 ```typescript
 import { expect } from "@std/expect";
 import { getCurrentRef } from "../src/main_lib.ts";
@@ -169,22 +176,24 @@ Deno.test("getCurrentRef works", async () => {
 
 ## 📚 Documentation Map
 
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| `SUMMARY.md` | Executive overview | Everyone |
-| `CODE_REVIEW.md` | Detailed analysis | Developers |
-| `TEST_RESULTS.md` | Test breakdown | QA/Developers |
-| `INTEGRATION_GUIDE.md` | How to integrate | Developers |
-| `tests/README.md` | Test documentation | Test writers |
-| `QUICK_REFERENCE.md` | Quick lookup | Everyone |
+| Document               | Purpose            | Audience      |
+| ---------------------- | ------------------ | ------------- |
+| `SUMMARY.md`           | Executive overview | Everyone      |
+| `CODE_REVIEW.md`       | Detailed analysis  | Developers    |
+| `TEST_RESULTS.md`      | Test breakdown     | QA/Developers |
+| `INTEGRATION_GUIDE.md` | How to integrate   | Developers    |
+| `tests/README.md`      | Test documentation | Test writers  |
+| `QUICK_REFERENCE.md`   | Quick lookup       | Everyone      |
 
 ## 🎓 Learning Resources
 
 ### Deno Testing
+
 - [Deno Testing Guide](https://docs.deno.com/runtime/manual/basics/testing/)
 - [@std/expect Documentation](https://jsr.io/@std/expect)
 
 ### Git Internals
+
 - [Git Book - Internals](https://git-scm.com/book/en/v2/Git-Internals-Plumbing-and-Porcelain)
 - [git-merge-tree](https://git-scm.com/docs/git-merge-tree)
 - [git-read-tree](https://git-scm.com/docs/git-read-tree)
@@ -192,6 +201,7 @@ Deno.test("getCurrentRef works", async () => {
 ## 💡 Tips
 
 ### Debugging Tests
+
 ```bash
 # Run single test
 deno test --allow-all --filter "test name"
@@ -204,6 +214,7 @@ console.log("Debug:", value);
 ```
 
 ### Performance
+
 ```bash
 # Run tests with timing
 deno test --allow-all -- --quiet=false
@@ -213,6 +224,7 @@ deno test --allow-all --trace-ops --v8-flags=--prof
 ```
 
 ### Coverage
+
 ```bash
 # Generate coverage
 deno test --allow-all --coverage=coverage
@@ -238,6 +250,7 @@ deno coverage coverage --lcov > coverage.lcov
 ## 🆘 Troubleshooting
 
 ### Tests won't run
+
 ```bash
 # Check permissions
 deno test --allow-all tests/
@@ -250,11 +263,13 @@ git --version   # Should be 2.x
 ```
 
 ### Tests are slow
+
 - Each test creates a Git repo (~50-100ms overhead)
 - Run specific test suites instead of all
 - Tests run in parallel by default
 
 ### Can't find functions
+
 ```typescript
 // Make sure to import from main_lib.ts
 import { functionName } from "./src/main_lib.ts";
@@ -263,6 +278,7 @@ import { functionName } from "./src/main_lib.ts";
 ## 📞 Support
 
 For questions or issues:
+
 1. Check the documentation files
 2. Review test examples
 3. Check the code review findings
@@ -270,7 +286,5 @@ For questions or issues:
 
 ---
 
-**Last Updated**: October 15, 2025
-**Deno Version**: 2.x
-**Test Framework**: @std/expect
-**Total Tests**: 49 (44 passing)
+**Last Updated**: October 15, 2025 **Deno Version**: 2.x **Test Framework**:
+@std/expect **Total Tests**: 49 (44 passing)

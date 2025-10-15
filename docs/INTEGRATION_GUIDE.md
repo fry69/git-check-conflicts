@@ -1,6 +1,7 @@
 # Integration Guide: Using the Refactored Library
 
-This guide shows how to integrate the refactored `main_lib.ts` into your existing `main.ts` script.
+This guide shows how to integrate the refactored `main_lib.ts` into your
+existing `main.ts` script.
 
 ## Option 1: Full Integration (Recommended)
 
@@ -18,6 +19,7 @@ import { parseArgs } from "@std/cli/parse-args";
 import {
   checkConflictsWithMergeTree,
   checkConflictsWithReadTree,
+  type ConflictCheckResult,
   detectDefaultBranch,
   fetchAll,
   fileDiffFor,
@@ -29,7 +31,6 @@ import {
   resolveCommit,
   revToTree,
   TempIndex,
-  type ConflictCheckResult,
 } from "./main_lib.ts";
 
 function usage(prog = "git-check-conflicts.ts") {
@@ -129,10 +130,11 @@ async function main(): Promise<number> {
 
   // Compute merge-base
   const emptyTree = await getEmptyTreeHash();
-  const mergeBaseResult = await resolveCommit(`${oursCommit}...${theirsCommit}`).catch(() => ({
-    commit: "",
-    resolvedRef: "",
-  }));
+  const mergeBaseResult = await resolveCommit(`${oursCommit}...${theirsCommit}`)
+    .catch(() => ({
+      commit: "",
+      resolvedRef: "",
+    }));
   const mergeBase = mergeBaseResult.commit;
 
   // Resolve trees
@@ -182,7 +184,9 @@ async function main(): Promise<number> {
       for (const f of unmergedFiles) console.log(f);
 
       if (printDiffs) {
-        console.log("\nUnified diffs (ours -> theirs) for each conflicting file:");
+        console.log(
+          "\nUnified diffs (ours -> theirs) for each conflicting file:",
+        );
         for (const f of unmergedFiles) {
           console.log("\n--- " + f + " ---");
           const diff = result.diffs[f];
@@ -283,7 +287,7 @@ Keep the current `main.ts` but gradually replace functions:
 
 ```typescript
 // Start by importing and using specific functions
-import { runCmd, TempIndex, GitError } from "./main_lib.ts";
+import { GitError, runCmd, TempIndex } from "./main_lib.ts";
 
 // Replace inline implementations one at a time
 // Example: Replace the runCmd function with the library version
@@ -295,7 +299,8 @@ const result = await runCmd(["git", "status"]);
 Keep both versions and use them for different purposes:
 
 - `main.ts` - Original monolithic script (for quick edits)
-- `main_lib.ts` + new entry point - Tested, maintainable version (for production)
+- `main_lib.ts` + new entry point - Tested, maintainable version (for
+  production)
 
 ## Testing the Integration
 
@@ -341,6 +346,7 @@ git checkout main.ts  # If you replaced it
 ## Questions?
 
 Refer to:
+
 - `CODE_REVIEW.md` - Detailed code analysis
 - `tests/README.md` - How to run and write tests
 - `TEST_RESULTS.md` - Current test status

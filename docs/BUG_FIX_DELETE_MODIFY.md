@@ -2,13 +2,16 @@
 
 ## Issue
 
-The tool failed to detect certain types of merge conflicts, specifically delete/modify conflicts where:
+The tool failed to detect certain types of merge conflicts, specifically
+delete/modify conflicts where:
+
 - One branch deletes a file
 - The other branch modifies the same file
 
 ### Example
 
 User reported in `/Users/fry/GitHub/fry69/aqfile`:
+
 ```bash
 $ git-check-conflicts
 No conflicts expected.  # WRONG!
@@ -19,7 +22,9 @@ CONFLICT (content): Merge conflict in packages/aqfile/CHANGELOG.md  # Actual con
 
 ## Root Cause
 
-The `checkConflictsWithMergeTree()` function only checked for content conflict markers (`<<<<<<<`), but Git's `merge-tree` command reports several types of conflicts:
+The `checkConflictsWithMergeTree()` function only checked for content conflict
+markers (`<<<<<<<`), but Git's `merge-tree` command reports several types of
+conflicts:
 
 1. **Content conflicts**: Show `<<<<<<<` markers in the output
 2. **Delete/modify conflicts**: Show `removed in local` or `removed in remote`
@@ -27,11 +32,13 @@ The `checkConflictsWithMergeTree()` function only checked for content conflict m
 4. **File mode conflicts**: Show `changed in both`
 
 The original implementation:
+
 ```typescript
 return /<<<<<<< /m.test(mergeTreeRes.stdout);
 ```
 
-This only caught content conflicts (#1), missing all structural conflicts (#2-4).
+This only caught content conflicts (#1), missing all structural conflicts
+(#2-4).
 
 ## Fix
 
@@ -59,7 +66,10 @@ export async function checkConflictsWithMergeTree(
 
   // Check for delete/modify and other structural conflicts
   // These appear at the start of lines in merge-tree output
-  if (/^(removed in (local|remote)|added in (local|remote)|changed in both)/m.test(mergeTreeRes.stdout)) {
+  if (
+    /^(removed in (local|remote)|added in (local|remote)|changed in both)/m
+      .test(mergeTreeRes.stdout)
+  ) {
     return true;
   }
 
@@ -97,11 +107,13 @@ Deno.test("integration - delete/modify conflict", async () => {
 - Previous: 49 tests passing
 - After fix: **50 tests passing** (100%)
 
-All existing tests continue to pass, confirming the fix doesn't break existing functionality.
+All existing tests continue to pass, confirming the fix doesn't break existing
+functionality.
 
 ## Impact
 
 The tool now correctly detects:
+
 - ✅ Content conflicts (lines changed in both branches)
 - ✅ Delete/modify conflicts (file deleted in one, modified in other)
 - ✅ Add/add conflicts (same file added differently in both)
@@ -111,4 +123,7 @@ This provides comprehensive conflict detection for merge operations.
 
 ## Note on Rebase vs Merge
 
-The tool checks for **merge conflicts** (what would happen if you run `git merge`). Rebasing can have different conflicts because it replays commits one-by-one, but in this case both merge and rebase correctly showed conflicts after the fix.
+The tool checks for **merge conflicts** (what would happen if you run
+`git merge`). Rebasing can have different conflicts because it replays commits
+one-by-one, but in this case both merge and rebase correctly showed conflicts
+after the fix.

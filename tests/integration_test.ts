@@ -25,7 +25,10 @@ async function createTestRepo(name: string): Promise<TestRepo> {
   return { dir: tempDir, cleanup };
 }
 
-async function gitInRepo(dir: string, args: string[]): Promise<{ code: number; stdout: string }> {
+async function gitInRepo(
+  dir: string,
+  args: string[],
+): Promise<{ code: number; stdout: string }> {
   const originalDir = Deno.cwd();
   try {
     Deno.chdir(dir);
@@ -42,7 +45,11 @@ async function setupBasicRepo(dir: string): Promise<void> {
   await gitInRepo(dir, ["commit", "--allow-empty", "-m", "initial commit"]);
 }
 
-async function writeFile(dir: string, filename: string, content: string): Promise<void> {
+async function writeFile(
+  dir: string,
+  filename: string,
+  content: string,
+): Promise<void> {
   await Deno.writeTextFile(`${dir}/${filename}`, content);
 }
 
@@ -64,11 +71,20 @@ Deno.test("integration - repo with no conflicts", async () => {
     await gitInRepo(repo.dir, ["commit", "-m", "add other file"]);
 
     // Check for conflicts between feature and main
-    const mergeBase = await gitInRepo(repo.dir, ["merge-base", "feature", "main"]);
+    const mergeBase = await gitInRepo(repo.dir, [
+      "merge-base",
+      "feature",
+      "main",
+    ]);
     expect(mergeBase.code).toBe(0);
 
     // These branches should merge cleanly (different files)
-    const mergeCheck = await gitInRepo(repo.dir, ["merge-tree", mergeBase.stdout, "feature", "main"]);
+    const mergeCheck = await gitInRepo(repo.dir, [
+      "merge-tree",
+      mergeBase.stdout,
+      "feature",
+      "main",
+    ]);
     expect(mergeCheck.stdout).not.toContain("<<<<<<<");
   } finally {
     await repo.cleanup();
@@ -87,20 +103,32 @@ Deno.test("integration - repo with conflicts", async () => {
 
     // Create branch and modify the same line
     await gitInRepo(repo.dir, ["checkout", "-b", "branch1"]);
-    await writeFile(repo.dir, "conflict.txt", "line1\nmodified in branch1\nline3\n");
+    await writeFile(
+      repo.dir,
+      "conflict.txt",
+      "line1\nmodified in branch1\nline3\n",
+    );
     await gitInRepo(repo.dir, ["add", "conflict.txt"]);
     await gitInRepo(repo.dir, ["commit", "-m", "modify in branch1"]);
 
     // Go back to main and modify same line differently
     await gitInRepo(repo.dir, ["checkout", "-"]);
-    await writeFile(repo.dir, "conflict.txt", "line1\nmodified in main\nline3\n");
+    await writeFile(
+      repo.dir,
+      "conflict.txt",
+      "line1\nmodified in main\nline3\n",
+    );
     await gitInRepo(repo.dir, ["add", "conflict.txt"]);
     await gitInRepo(repo.dir, ["commit", "-m", "modify in main"]);
 
     // Check for conflicts
     const mainCommit = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
     const branch1Commit = await gitInRepo(repo.dir, ["rev-parse", "branch1"]);
-    const mergeBase = await gitInRepo(repo.dir, ["merge-base", "HEAD", "branch1"]);
+    const mergeBase = await gitInRepo(repo.dir, [
+      "merge-base",
+      "HEAD",
+      "branch1",
+    ]);
 
     expect(mergeBase.code).toBe(0);
 
@@ -296,7 +324,11 @@ Deno.test("integration - multiple conflicting files", async () => {
     // Check conflicts
     const mainCommit = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
     const branch1Commit = await gitInRepo(repo.dir, ["rev-parse", "branch1"]);
-    const mergeBase = await gitInRepo(repo.dir, ["merge-base", "HEAD", "branch1"]);
+    const mergeBase = await gitInRepo(repo.dir, [
+      "merge-base",
+      "HEAD",
+      "branch1",
+    ]);
 
     const mergeCheck = await gitInRepo(repo.dir, [
       "merge-tree",
@@ -320,13 +352,27 @@ Deno.test("integration - binary files", async () => {
     await setupBasicRepo(repo.dir);
 
     // Create binary file (simple approach: random bytes)
-    const binaryData = new Uint8Array([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+    const binaryData = new Uint8Array([
+      0x89,
+      0x50,
+      0x4E,
+      0x47,
+      0x0D,
+      0x0A,
+      0x1A,
+      0x0A,
+    ]);
     await Deno.writeFile(`${repo.dir}/image.bin`, binaryData);
     await gitInRepo(repo.dir, ["add", "image.bin"]);
     await gitInRepo(repo.dir, ["commit", "-m", "add binary"]);
 
     // Git should recognize it as binary
-    const result = await gitInRepo(repo.dir, ["diff", "--stat", "HEAD^", "HEAD"]);
+    const result = await gitInRepo(repo.dir, [
+      "diff",
+      "--stat",
+      "HEAD^",
+      "HEAD",
+    ]);
     expect(result.code).toBe(0);
   } finally {
     await repo.cleanup();
@@ -349,7 +395,11 @@ Deno.test("integration - no common ancestor", async () => {
     const orphanCommit = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
 
     // Try to find merge base between two unrelated commits
-    const mergeBase = await gitInRepo(repo.dir, ["merge-base", orphanCommit.stdout, firstCommit.stdout]);
+    const mergeBase = await gitInRepo(repo.dir, [
+      "merge-base",
+      orphanCommit.stdout,
+      firstCommit.stdout,
+    ]);
     // In git, branches with no common ancestor will fail merge-base (exit code 1)
     // or in some versions might return empty/error
     expect(mergeBase.code === 1 || mergeBase.stdout === "").toBe(true);
@@ -384,7 +434,11 @@ Deno.test("integration - delete/modify conflict", async () => {
     const modifyCommit = await gitInRepo(repo.dir, ["rev-parse", "HEAD"]);
 
     // Check for conflicts using merge-tree
-    const mergeBase = await gitInRepo(repo.dir, ["merge-base", deleteCommit.stdout, modifyCommit.stdout]);
+    const mergeBase = await gitInRepo(repo.dir, [
+      "merge-base",
+      deleteCommit.stdout,
+      modifyCommit.stdout,
+    ]);
     expect(mergeBase.code).toBe(0);
 
     const mergeTreeResult = await gitInRepo(repo.dir, [
@@ -414,13 +468,21 @@ Deno.test("integration - rename/modify conflict with diff", async () => {
     // Create feature branch that renames the file
     await gitInRepo(repo.dir, ["checkout", "-b", "feature"]);
     await gitInRepo(repo.dir, ["mv", "original.txt", "renamed.txt"]);
-    await writeFile(repo.dir, "renamed.txt", "line 1\nline 2\nline 3\nline 4\n");
+    await writeFile(
+      repo.dir,
+      "renamed.txt",
+      "line 1\nline 2\nline 3\nline 4\n",
+    );
     await gitInRepo(repo.dir, ["add", "renamed.txt"]);
     await gitInRepo(repo.dir, ["commit", "-m", "rename and add line 4"]);
 
     // Go back to main and modify the original file
     await gitInRepo(repo.dir, ["checkout", "main"]);
-    await writeFile(repo.dir, "original.txt", "line 1\nline 2 modified\nline 3\n");
+    await writeFile(
+      repo.dir,
+      "original.txt",
+      "line 1\nline 2 modified\nline 3\n",
+    );
     await gitInRepo(repo.dir, ["add", "original.txt"]);
     await gitInRepo(repo.dir, ["commit", "-m", "modify line 2"]);
 
@@ -431,27 +493,54 @@ Deno.test("integration - rename/modify conflict with diff", async () => {
     const originalDir = Deno.cwd();
     try {
       Deno.chdir(repo.dir);
-      const { checkConflictsWithMergeTree, getConflictingFilesFromMergeTree, fileDiffFor, resolveCommit, getEmptyTreeHash, runCmd } = await import("../src/lib.ts");
+      const {
+        checkConflictsWithMergeTree,
+        getConflictingFilesFromMergeTree,
+        fileDiffFor,
+        resolveCommit,
+        getEmptyTreeHash,
+        runCmd,
+      } = await import("../src/lib.ts");
 
       const oursResult = await resolveCommit("HEAD");
       const theirsResult = await resolveCommit("main");
       const oursCommit = oursResult.commit;
       const theirsCommit = theirsResult.commit;
-      const mbRes = await runCmd(["git", "merge-base", oursCommit, theirsCommit]);
+      const mbRes = await runCmd([
+        "git",
+        "merge-base",
+        oursCommit,
+        theirsCommit,
+      ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
       const emptyTree = await getEmptyTreeHash();
 
       // Should detect conflict
-      const hasConflict = await checkConflictsWithMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const hasConflict = await checkConflictsWithMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(hasConflict).toBe(true);
 
       // Get conflicting files
-      const conflictingFiles = await getConflictingFilesFromMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const conflictingFiles = await getConflictingFilesFromMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(conflictingFiles.length).toBe(1);
       expect(conflictingFiles[0]).toBe("original.txt");
 
       // Get diff - should show rename and content differences
-      const diff = await fileDiffFor("original.txt", oursCommit, theirsCommit, mergeBase || undefined);
+      const diff = await fileDiffFor(
+        "original.txt",
+        oursCommit,
+        theirsCommit,
+        mergeBase || undefined,
+      );
       expect(diff).toContain("RENAME/MODIFY CONFLICT");
       expect(diff).toContain("renamed original.txt → renamed.txt");
       expect(diff).toContain("modified original.txt");
@@ -472,7 +561,11 @@ Deno.test("integration - file moved to subdirectory with modification", async ()
     await setupBasicRepo(repo.dir);
 
     // Create a file on main branch
-    await writeFile(repo.dir, "config.json", '{"version": "1.0", "name": "app"}\n');
+    await writeFile(
+      repo.dir,
+      "config.json",
+      '{"version": "1.0", "name": "app"}\n',
+    );
     await gitInRepo(repo.dir, ["add", "config.json"]);
     await gitInRepo(repo.dir, ["commit", "-m", "add config"]);
 
@@ -480,13 +573,25 @@ Deno.test("integration - file moved to subdirectory with modification", async ()
     await gitInRepo(repo.dir, ["checkout", "-b", "feature"]);
     await Deno.mkdir(`${repo.dir}/conf`, { recursive: true });
     await gitInRepo(repo.dir, ["mv", "config.json", "conf/config.json"]);
-    await writeFile(repo.dir, "conf/config.json", '{"version": "2.0", "name": "app"}\n');
+    await writeFile(
+      repo.dir,
+      "conf/config.json",
+      '{"version": "2.0", "name": "app"}\n',
+    );
     await gitInRepo(repo.dir, ["add", "conf/config.json"]);
-    await gitInRepo(repo.dir, ["commit", "-m", "move to conf/ and update version"]);
+    await gitInRepo(repo.dir, [
+      "commit",
+      "-m",
+      "move to conf/ and update version",
+    ]);
 
     // Go back to main and modify the file
     await gitInRepo(repo.dir, ["checkout", "main"]);
-    await writeFile(repo.dir, "config.json", '{"version": "1.0", "name": "myapp"}\n');
+    await writeFile(
+      repo.dir,
+      "config.json",
+      '{"version": "1.0", "name": "myapp"}\n',
+    );
     await gitInRepo(repo.dir, ["add", "config.json"]);
     await gitInRepo(repo.dir, ["commit", "-m", "change app name"]);
 
@@ -496,24 +601,51 @@ Deno.test("integration - file moved to subdirectory with modification", async ()
     const originalDir = Deno.cwd();
     try {
       Deno.chdir(repo.dir);
-      const { checkConflictsWithMergeTree, getConflictingFilesFromMergeTree, fileDiffFor, resolveCommit, getEmptyTreeHash, runCmd } = await import("../src/lib.ts");
+      const {
+        checkConflictsWithMergeTree,
+        getConflictingFilesFromMergeTree,
+        fileDiffFor,
+        resolveCommit,
+        getEmptyTreeHash,
+        runCmd,
+      } = await import("../src/lib.ts");
 
       const oursResult = await resolveCommit("HEAD");
       const theirsResult = await resolveCommit("main");
       const oursCommit = oursResult.commit;
       const theirsCommit = theirsResult.commit;
-      const mbRes = await runCmd(["git", "merge-base", oursCommit, theirsCommit]);
+      const mbRes = await runCmd([
+        "git",
+        "merge-base",
+        oursCommit,
+        theirsCommit,
+      ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
       const emptyTree = await getEmptyTreeHash();
 
-      const hasConflict = await checkConflictsWithMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const hasConflict = await checkConflictsWithMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(hasConflict).toBe(true);
 
-      const conflictingFiles = await getConflictingFilesFromMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const conflictingFiles = await getConflictingFilesFromMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(conflictingFiles.length).toBe(1);
       expect(conflictingFiles[0]).toBe("config.json");
 
-      const diff = await fileDiffFor("config.json", oursCommit, theirsCommit, mergeBase || undefined);
+      const diff = await fileDiffFor(
+        "config.json",
+        oursCommit,
+        theirsCommit,
+        mergeBase || undefined,
+      );
       // The diff should either show rename conflict detection OR show the delete/modify conflict
       // Git's behavior may vary, so we check for either case
       if (diff && diff.includes("RENAME/MODIFY CONFLICT")) {
@@ -549,7 +681,11 @@ Deno.test("integration - multiple files renamed and modified", async () => {
     await writeFile(repo.dir, "renamed1.txt", "content 1 updated\n");
     await writeFile(repo.dir, "renamed2.txt", "content 2 updated\n");
     await gitInRepo(repo.dir, ["add", "."]);
-    await gitInRepo(repo.dir, ["commit", "-m", "rename and update file1 and file2"]);
+    await gitInRepo(repo.dir, [
+      "commit",
+      "-m",
+      "rename and update file1 and file2",
+    ]);
 
     // Go back to main and modify the original files
     await gitInRepo(repo.dir, ["checkout", "main"]);
@@ -564,32 +700,64 @@ Deno.test("integration - multiple files renamed and modified", async () => {
     const originalDir = Deno.cwd();
     try {
       Deno.chdir(repo.dir);
-      const { checkConflictsWithMergeTree, getConflictingFilesFromMergeTree, fileDiffFor, resolveCommit, getEmptyTreeHash, runCmd } = await import("../src/lib.ts");
+      const {
+        checkConflictsWithMergeTree,
+        getConflictingFilesFromMergeTree,
+        fileDiffFor,
+        resolveCommit,
+        getEmptyTreeHash,
+        runCmd,
+      } = await import("../src/lib.ts");
 
       const oursResult = await resolveCommit("HEAD");
       const theirsResult = await resolveCommit("main");
       const oursCommit = oursResult.commit;
       const theirsCommit = theirsResult.commit;
-      const mbRes = await runCmd(["git", "merge-base", oursCommit, theirsCommit]);
+      const mbRes = await runCmd([
+        "git",
+        "merge-base",
+        oursCommit,
+        theirsCommit,
+      ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
       const emptyTree = await getEmptyTreeHash();
 
-      const hasConflict = await checkConflictsWithMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const hasConflict = await checkConflictsWithMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(hasConflict).toBe(true);
 
-      const conflictingFiles = await getConflictingFilesFromMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const conflictingFiles = await getConflictingFilesFromMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(conflictingFiles.length).toBeGreaterThanOrEqual(2);
       expect(conflictingFiles).toContain("file1.txt");
       expect(conflictingFiles).toContain("file2.txt");
 
       // Check both files have diffs (may or may not be detected as renames depending on Git's rename detection threshold)
-      const diff1 = await fileDiffFor("file1.txt", oursCommit, theirsCommit, mergeBase || undefined);
+      const diff1 = await fileDiffFor(
+        "file1.txt",
+        oursCommit,
+        theirsCommit,
+        mergeBase || undefined,
+      );
       expect(diff1).toBeTruthy();
       if (diff1 && diff1.includes("RENAME/MODIFY CONFLICT")) {
         expect(diff1).toContain("file1.txt → renamed1.txt");
       }
 
-      const diff2 = await fileDiffFor("file2.txt", oursCommit, theirsCommit, mergeBase || undefined);
+      const diff2 = await fileDiffFor(
+        "file2.txt",
+        oursCommit,
+        theirsCommit,
+        mergeBase || undefined,
+      );
       expect(diff2).toBeTruthy();
       if (diff2 && diff2.includes("RENAME/MODIFY CONFLICT")) {
         expect(diff2).toContain("file2.txt → renamed2.txt");
@@ -627,18 +795,33 @@ Deno.test("integration - rename without modification (no conflict)", async () =>
     const originalDir = Deno.cwd();
     try {
       Deno.chdir(repo.dir);
-      const { checkConflictsWithMergeTree, resolveCommit, getEmptyTreeHash, runCmd } = await import("../src/lib.ts");
+      const {
+        checkConflictsWithMergeTree,
+        resolveCommit,
+        getEmptyTreeHash,
+        runCmd,
+      } = await import("../src/lib.ts");
 
       const oursResult = await resolveCommit("HEAD");
       const theirsResult = await resolveCommit("main");
       const oursCommit = oursResult.commit;
       const theirsCommit = theirsResult.commit;
-      const mbRes = await runCmd(["git", "merge-base", oursCommit, theirsCommit]);
+      const mbRes = await runCmd([
+        "git",
+        "merge-base",
+        oursCommit,
+        theirsCommit,
+      ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
       const emptyTree = await getEmptyTreeHash();
 
       // Should NOT detect conflict since content is unchanged
-      const hasConflict = await checkConflictsWithMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const hasConflict = await checkConflictsWithMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(hasConflict).toBe(false);
     } finally {
       Deno.chdir(originalDir);
@@ -663,11 +846,19 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
     await gitInRepo(repo.dir, ["mv", "data.txt", "info.txt"]);
     await writeFile(repo.dir, "info.txt", "original data\nmore info\n");
     await gitInRepo(repo.dir, ["add", "info.txt"]);
-    await gitInRepo(repo.dir, ["commit", "-m", "rename to info.txt and add content"]);
+    await gitInRepo(repo.dir, [
+      "commit",
+      "-m",
+      "rename to info.txt and add content",
+    ]);
 
     // Modify on main
     await gitInRepo(repo.dir, ["checkout", "main"]);
-    await writeFile(repo.dir, "data.txt", "original data\ndifferent addition\n");
+    await writeFile(
+      repo.dir,
+      "data.txt",
+      "original data\ndifferent addition\n",
+    );
     await gitInRepo(repo.dir, ["add", "data.txt"]);
     await gitInRepo(repo.dir, ["commit", "-m", "add different content"]);
 
@@ -677,21 +868,44 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
     const originalDir = Deno.cwd();
     try {
       Deno.chdir(repo.dir);
-      const { checkConflictsWithMergeTree, getConflictingFilesFromMergeTree, getFileConflictDetail, resolveCommit, getEmptyTreeHash, getCurrentRef, runCmd } = await import("../src/lib.ts");
+      const {
+        checkConflictsWithMergeTree,
+        getConflictingFilesFromMergeTree,
+        getFileConflictDetail,
+        resolveCommit,
+        getEmptyTreeHash,
+        getCurrentRef,
+        runCmd,
+      } = await import("../src/lib.ts");
 
       const currentRef = await getCurrentRef();
       const oursResult = await resolveCommit("HEAD");
       const theirsResult = await resolveCommit("main");
       const oursCommit = oursResult.commit;
       const theirsCommit = theirsResult.commit;
-      const mbRes = await runCmd(["git", "merge-base", oursCommit, theirsCommit]);
+      const mbRes = await runCmd([
+        "git",
+        "merge-base",
+        oursCommit,
+        theirsCommit,
+      ]);
       const mergeBase = mbRes.code === 0 && mbRes.stdout ? mbRes.stdout : "";
       const emptyTree = await getEmptyTreeHash();
 
-      const hasConflict = await checkConflictsWithMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const hasConflict = await checkConflictsWithMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
       expect(hasConflict).toBe(true);
 
-      const conflictingFiles = await getConflictingFilesFromMergeTree(mergeBase || emptyTree, oursCommit, theirsCommit, emptyTree);
+      const conflictingFiles = await getConflictingFilesFromMergeTree(
+        mergeBase || emptyTree,
+        oursCommit,
+        theirsCommit,
+        emptyTree,
+      );
 
       // Build JSON result like main.ts does with new structure
       interface FileDetail {
@@ -717,7 +931,12 @@ Deno.test("integration - JSON output with rename/modify conflict", async () => {
       };
 
       for (const f of conflictingFiles) {
-        result.files[f] = await getFileConflictDetail(f, oursCommit, theirsCommit, mergeBase || undefined);
+        result.files[f] = await getFileConflictDetail(
+          f,
+          oursCommit,
+          theirsCommit,
+          mergeBase || undefined,
+        );
       }
 
       // Verify JSON structure

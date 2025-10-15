@@ -2,7 +2,9 @@
 
 ## Overview
 
-The `--json` flag outputs structured conflict information in a machine-readable JSON format, ideal for CI/CD pipelines, automation tools, and programmatic analysis.
+The `--json` flag outputs structured conflict information in a machine-readable
+JSON format, ideal for CI/CD pipelines, automation tools, and programmatic
+analysis.
 
 ## Structure
 
@@ -161,26 +163,30 @@ check-conflicts:
   script:
     - git-check-conflicts --json main > conflicts.json || true
     - |
-      if jq -e '.conflicts == true' conflicts.json > /dev/null; then
-        echo "Merge conflicts found:"
-        jq -r '.conflicted_files[]' conflicts.json
-        exit 1
-      fi
+        if jq -e '.conflicts == true' conflicts.json > /dev/null; then
+          echo "Merge conflicts found:"
+          jq -r '.conflicted_files[]' conflicts.json
+          exit 1
+        fi
 ```
 
 ## Integration Tips
 
 1. **Always check exit code first** - Exit code indicates conflict status
-2. **Use `--diff` flag judiciously** - Adds significant data, only use when needed
-3. **Parse conflict_type** - Filter/handle different conflict types appropriately
+2. **Use `--diff` flag judiciously** - Adds significant data, only use when
+   needed
+3. **Parse conflict_type** - Filter/handle different conflict types
+   appropriately
 4. **Check rename field existence** - Only present for rename-related conflicts
 5. **Validate JSON** - Use `jq` or similar to validate structure before parsing
 
 ## Migration from Previous Format
 
-**Breaking Change**: Version 1.x used `diffs` object with raw strings. Version 2.0+ uses `files` object with structured `FileConflictDetail` objects.
+**Breaking Change**: Version 1.x used `diffs` object with raw strings. Version
+2.0+ uses `files` object with structured `FileConflictDetail` objects.
 
 ### Old Format (v1.x)
+
 ```json
 {
   "diffs": {
@@ -190,6 +196,7 @@ check-conflicts:
 ```
 
 ### New Format (v2.0+)
+
 ```json
 {
   "files": {
@@ -203,4 +210,5 @@ check-conflicts:
 }
 ```
 
-Update your parsing code to use `.files` instead of `.diffs` and access the structured fields.
+Update your parsing code to use `.files` instead of `.diffs` and access the
+structured fields.

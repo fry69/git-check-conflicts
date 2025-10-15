@@ -1,6 +1,7 @@
 # git-check-conflicts
 
-Pre-merge conflict detection tool for Git repositories. Checks if merging a branch would result in conflicts without modifying the working tree.
+Pre-merge conflict detection tool for Git repositories. Checks if merging a
+branch would result in conflicts without modifying the working tree.
 
 ## Usage
 
@@ -8,7 +9,8 @@ Pre-merge conflict detection tool for Git repositories. Checks if merging a bran
 deno run -P src/main.ts [options] [branch]
 ```
 
-The tool uses named permissions defined in `deno.json`. Use `-P` to apply the default permission set, or use `--allow-all` for full permissions.
+The tool uses named permissions defined in `deno.json`. Use `-P` to apply the
+default permission set, or use `--allow-all` for full permissions.
 
 ### Basic Examples
 
@@ -52,6 +54,7 @@ The tool uses two strategies:
 2. **merge-tree**: Fallback method checking for conflict markers
 
 Default branch detection tries in order:
+
 1. Remote HEAD (e.g., `origin/HEAD`)
 2. Local `main` branch
 3. Local `master` branch
@@ -89,7 +92,8 @@ Compile to a standalone executable for distribution:
 deno task compile
 ```
 
-This creates a `git-check-conflicts` binary in the current directory that can be used without Deno installed:
+This creates a `git-check-conflicts` binary in the current directory that can be
+used without Deno installed:
 
 ```bash
 ./git-check-conflicts --help
